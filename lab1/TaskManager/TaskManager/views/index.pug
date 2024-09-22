@@ -2,17 +2,30 @@ extends layout
 
 block content
   h1 Task List
-  form(action="/add-task" method="POST")
+  form(action="/add-task" method="POST" enctype="multipart/form-data")
     input(type="text" name="name" placeholder="Task name" required)
     input(type="text" name="description" placeholder="Task description" required)
+    input(type="file" name="file")
     button(type="submit") Add Task
+  form(action="/filter" method="GET" enctype="text/plain")
+    select(name="status")
+      option(value="none") None
+      option(value="pending") Option 1
+      option(value="done") Option 2
+      option(value="rejected") Option 3
+    button(type="submit") Update
   div
-    ul
-      each task in tasks
-        if task.photo
-          img(src=task.photo, alt="Task photo", width="100")
-        strong #{task.name}: 
-        br
-        |  #{task.description}
-        br 
-        br
+    each task in tasks
+      if task.photo
+        img(src=`data:${task.photo.mimeType};base64,${task.photo.buffer.toString('base64')}`, alt="Task photo", width="100")
+      strong #{task.name}: 
+      br
+      |  #{task.description}
+      form(action="/update-task" method="POST" enctype="text/plain")
+        input(type="date" name="date")
+        select(name="status")
+          option(value="pending") Option 1
+          option(value="done") Option 2
+          option(value="rejected") Option 3
+        button(type="submit") Update
+      br
