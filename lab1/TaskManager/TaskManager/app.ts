@@ -3,6 +3,8 @@ import { AddressInfo } from "net";
 import * as path from 'path';
 
 import routes from './routes/index';
+import * as admin from 'firebase-admin';
+import { firebaseConfig } from './config/fbconfig';
 
 const debug = require('debug')('my express app');
 const app = express();
@@ -14,6 +16,9 @@ app.set('view engine', 'pug');
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: false }));
 
+admin.initializeApp({
+    credential: admin.credential.cert(firebaseConfig),
+});
 app.use('/', routes);
 
 // catch 404 and forward to error handler
