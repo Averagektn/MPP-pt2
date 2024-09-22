@@ -1,5 +1,5 @@
 {
-  "name": "client-server",
+  "name": "task-manager",
   "version": "0.0.0",
   "private": true,
   "scripts": {
@@ -7,7 +7,7 @@
     "clean": "tsc --build --clean",
     "start": "node app"
   },
-  "description": "ClientServer",
+  "description": "TaskManager",
   "author": {
     "name": ""
   },

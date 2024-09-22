@@ -5,8 +5,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
  */
 const express = require("express");
 const router = express.Router();
+let tasks = [{ name: 'test', description: 'desc' }];
 router.get('/', (req, res) => {
-    res.render('index', { title: 'Express' });
+    res.render('index', { tasks });
+});
+router.post('/add-task', (req, res) => {
+    //tasks.push({ name: req.body.name, description: req.body.description });
+    res.redirect('/');
 });
 exports.default = router;
 //# sourceMappingURL=index.js.map

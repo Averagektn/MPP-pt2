@@ -1,0 +1,17 @@
+extends layout
+
+block content
+  h1 Task List
+  form(action="/add-task" method="POST" enctype="multipart/form-data")
+    input(type="text" name="name" placeholder="Task name" required)
+    input(type="text" name="description" placeholder="Task description" required)
+    input(type="file" name="photo")
+    button(type="submit") Add Task
+  ul
+    each task in tasks
+      li
+        strong #{task.name}: 
+        br
+        |  #{task.description}
+        if task.photo
+          img(src=task.photo, alt="Task photo", width="100")

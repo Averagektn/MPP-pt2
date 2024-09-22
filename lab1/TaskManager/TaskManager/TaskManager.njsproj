@@ -3,14 +3,14 @@
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">14.0</VisualStudioVersion>
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
-    <Name>ClientServer</Name>
-    <RootNamespace>ClientServer</RootNamespace>
+    <Name>TaskManager</Name>
+    <RootNamespace>TaskManager</RootNamespace>
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>9bc6feb1-93c0-4958-a2b1-ff241b8a4a19</ProjectGuid>
+    <ProjectGuid>62aa4f79-221c-483d-8d87-54bd691fb695</ProjectGuid>
     <ProjectHome>.</ProjectHome>
     <StartupFile>app.js</StartupFile>
     <SearchPath>
@@ -32,7 +32,6 @@
   <ItemGroup>
     <None Include="app.ts" />
     <None Include="routes\index.ts" />
-    <None Include="routes\user.ts" />
     <Content Include="tsconfig.json" />
     <Content Include="package.json" />
     <Content Include="public\stylesheets\main.css" />
