@@ -29,6 +29,8 @@ router.get('filter', (req, res) => {
     res.render('index', { tasks });
 });
 router.get('/', (req, res) => {
+    // WORKS!!!
+    //admin.database().ref('/').push("another test");
     res.render('index', { tasks });
 });
 exports.default = router;

@@ -1,13 +1,18 @@
 import * as express from 'express';
 import { AddressInfo } from "net";
 import * as path from 'path';
-
 import routes from './routes/index';
 import * as admin from 'firebase-admin';
-import { firebaseConfig } from './config/fbconfig';
 
 const debug = require('debug')('my express app');
 const app = express();
+const serviceAccount = require("./config/taskmanager-dedf9-firebase-adminsdk-uia8o-f0091c57e0.json");
+admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    databaseURL: "https://taskmanager-dedf9-default-rtdb.europe-west1.firebasedatabase.app"
+});
+// WORKS!!!
+//admin.database().ref('/').push("test");
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -16,9 +21,6 @@ app.set('view engine', 'pug');
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: false }));
 
-admin.initializeApp({
-    credential: admin.credential.cert(firebaseConfig),
-});
 app.use('/', routes);
 
 // catch 404 and forward to error handler

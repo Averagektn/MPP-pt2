@@ -32,6 +32,7 @@
   <ItemGroup>
     <None Include="app.ts" />
     <None Include="routes\index.ts" />
+    <Content Include="config\taskmanager-dedf9-firebase-adminsdk-uia8o-f0091c57e0.json" />
     <Content Include="tsconfig.json" />
     <Content Include="package.json" />
     <Content Include="public\stylesheets\main.css" />

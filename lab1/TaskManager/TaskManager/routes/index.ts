@@ -1,5 +1,6 @@
 import express = require('express');
 import multer = require('multer');
+import * as admin from 'firebase-admin';
 
 const router = express.Router();
 const upload = multer(); 
@@ -35,6 +36,9 @@ router.get('filter', (req: express.Request, res: express.Response) => {
 });
 
 router.get('/', (req: express.Request, res: express.Response) => {
+    // WORKS!!!
+    //admin.database().ref('/').push("another test");
+    
     res.render('index', { tasks });
 });
 
