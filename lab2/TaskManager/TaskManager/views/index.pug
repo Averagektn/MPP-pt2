@@ -1,0 +1,49 @@
+extends layout
+
+block content
+  div(class="container")
+    h1 Task List
+    hr
+    section
+      div(class="row")
+        form(action="/add-task" method="POST" enctype="multipart/form-data")
+          input(type="text" name="name" placeholder="Task name" required)
+          input(type="text" name="description" placeholder="Task description" required)
+          input(type="file" name="file"  accept="image/*" lang="en-us" required)
+          button(type="submit" class="btn") Add Task
+
+      div(class="row")
+        form(action="/filter" method="GET")
+          div(class="box")
+            if filterStatus
+              select(name="status") 
+                each skill in ["None", "Pending", "Done", "Rejected"]
+                  option(value=skill, selected=filterStatus === skill)= skill
+            else
+              select(name="status")
+                option(value="None") None
+                option(value="Pending") Pending
+                option(value="Done") Rone
+                option(value="Rejected") Rejected
+            button(type="submit" class="btn") Filter
+
+      div(class="row" style="text-align:center;")
+        each task in tasks
+          div(class="col")
+            strong #{task.name}: 
+            br
+            |  #{task.description}
+            br
+            form(action="/update-task" method="POST")
+              input(type="date" name="date" value=task.date)
+              input(type="hidden" value=task.id name="taskId")
+              div(class="box")
+                select(name="status") 
+                  each skill in ["Pending", "Done", "Rejected"]
+                    option(value=skill, selected=task.status === skill)= skill
+              button(type="submit" class="btn") Update
+            if task.photo
+              img(src=task.photo)
+            form(action="/delete-task" method="POST")
+              input(type="hidden" value=task.id name="taskId")
+              button(type="submit" class="btn") Delete
