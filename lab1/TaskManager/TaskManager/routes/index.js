@@ -21,10 +21,19 @@ const stoageBucket = admin.storage().bucket();
 router.post('/add-task', upload.single('file'), (req, res) => {
     const { name, description } = req.body;
     const file = req.file;
-    // UNNCESSERY FILE
+    if (!file) {
+        const task = {
+            name,
+            description,
+            status: "pending",
+            photo: null
+        };
+        dbRef.push(task);
+        res.redirect('/');
+        return;
+    }
     try {
-        // MAKE UNQ NAME
-        const blob = stoageBucket.file(file.originalname);
+        const blob = stoageBucket.file(generateUniqueFileName(file.originalname));
         const blobStream = blob.createWriteStream({
             metadata: {
                 contentType: file.mimetype,
@@ -100,6 +109,12 @@ function getTasks() {
         }
         return tasks;
     });
+}
+function generateUniqueFileName(originalName) {
+    const fileExtension = originalName.split('.').pop();
+    const timestamp = Date.now();
+    const randomNum = Math.floor(Math.random() * 10000);
+    return `${timestamp}-${randomNum}.${fileExtension}`;
 }
 exports.default = router;
 //# sourceMappingURL=index.js.map

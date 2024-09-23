@@ -14,10 +14,22 @@ router.post('/add-task', upload.single('file'), (req: express.Request, res: expr
     const { name, description } = req.body;
     const file = req.file;
 
-    // UNNCESSERY FILE
+    if (!file) {
+        const task = {
+            name,
+            description,
+            status: "pending",
+            photo: null
+        };
+
+        dbRef.push(task);
+
+        res.redirect('/');
+        return;
+    }
+
     try {
-        // MAKE UNQ NAME
-        const blob = stoageBucket.file(file.originalname);
+        const blob = stoageBucket.file(generateUniqueFileName(file.originalname));
         const blobStream = blob.createWriteStream({
             metadata: {
                 contentType: file.mimetype,
@@ -106,6 +118,14 @@ async function getTasks(): Promise<any[]> {
     } 
 
     return tasks;
+}
+
+function generateUniqueFileName(originalName: string): string {
+    const fileExtension = originalName.split('.').pop();
+    const timestamp = Date.now();
+    const randomNum = Math.floor(Math.random() * 10000); 
+
+    return `${timestamp}-${randomNum}.${fileExtension}`;
 }
 
 export default router;
