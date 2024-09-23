@@ -51,6 +51,11 @@
     <Folder Include="routes\" />
     <Folder Include="views\" />
   </ItemGroup>
+  <ItemGroup>
+    <TypeScriptCompile Include="model\task.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
+  </ItemGroup>
   <Import Project="$(VSToolsPath)\Node.js Tools\Microsoft.NodejsToolsV2.targets" />
   <ProjectExtensions>
     <VisualStudio>

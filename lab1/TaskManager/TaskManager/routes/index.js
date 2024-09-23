@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express = require("express");
 const multer = require("multer");
 const admin = require("firebase-admin");
+const task_1 = require("../model/task");
 const router = express.Router();
 const upload = multer();
 const tasksDbRef = '/tasks-v1';
@@ -21,13 +22,9 @@ const stoageBucket = admin.storage().bucket();
 router.post('/add-task', upload.single('file'), (req, res) => {
     const { name, description } = req.body;
     const file = req.file;
+    const defaultStatus = "Pending";
     if (!file) {
-        const task = {
-            name,
-            description,
-            status: "pending",
-            photo: null
-        };
+        const task = new task_1.default(name, description, defaultStatus);
         dbRef.push(task);
         res.redirect('/');
         return;
@@ -46,12 +43,7 @@ router.post('/add-task', upload.single('file'), (req, res) => {
         blobStream.on('finish', () => __awaiter(void 0, void 0, void 0, function* () {
             yield blob.makePublic();
             const publicUrl = `https://storage.googleapis.com/${stoageBucket.name}/${blob.name}`;
-            const task = {
-                name,
-                description,
-                status: "pending",
-                photo: publicUrl
-            };
+            const task = new task_1.default(name, description, defaultStatus, null, null, publicUrl);
             dbRef.push(task);
             res.redirect('/');
         }));
@@ -64,7 +56,7 @@ router.post('/add-task', upload.single('file'), (req, res) => {
 });
 router.post('/update-task', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const id = req.body.taskId;
-    const { date, status } = req.body.date;
+    const { date, status } = req.body;
     yield db.ref(`${tasksDbRef}/${id}`).update({ date, status });
     res.redirect('/');
 }));
@@ -76,7 +68,7 @@ router.post('/delete-task', (req, res) => __awaiter(void 0, void 0, void 0, func
 router.get('/filter', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const tasks = yield getTasks();
     const status = req.query.status;
-    if (status === 'none') {
+    if (status === 'None') {
         res.redirect('/');
     }
     else {
@@ -89,7 +81,7 @@ router.get('/filter', (req, res) => __awaiter(void 0, void 0, void 0, function* 
             }
             return 0;
         });
-        res.render('index', { tasks });
+        res.render('index', { tasks, filterStatus: status });
     }
 }));
 router.get('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
