@@ -7,25 +7,28 @@ block content
     input(type="text" name="description" placeholder="Task description" required)
     input(type="file" name="file")
     button(type="submit") Add Task
-  form(action="/filter" method="GET" enctype="text/plain")
+  form(action="/filter" method="GET")
     select(name="status")
-      option(value="none") None
-      option(value="pending") Option 1
-      option(value="done") Option 2
-      option(value="rejected") Option 3
+      option(value="none") none
+      option(value="pending") pending
+      option(value="done") done
+      option(value="rejected") rejected
     button(type="submit") Update
   div
     each task in tasks
       if task.photo
-        img(src=`data:${task.photo.mimeType};base64,${task.photo.buffer.toString('base64')}`, alt="Task photo", width="100")
+        img(src=task.photo)
       strong #{task.name}: 
       br
       |  #{task.description}
-      form(action="/update-task" method="POST" enctype="text/plain")
-        input(type="date" name="date")
-        select(name="status")
-          option(value="pending") Option 1
-          option(value="done") Option 2
-          option(value="rejected") Option 3
+      form(action="/update-task" method="POST")
+        input(type="date" name="date" value=task.date)
+        input(type="hidden" value=task.id name="taskId")
+        select(name="status") 
+          each skill in ["pending", "done", "rejected"]
+            option(value=skill, selected=task.status === skill)= skill
         button(type="submit") Update
+      form(action="/delete-task" method="POST")
+        input(type="hidden" value=task.id name="taskId")
+        button(type="submit") Delete
       br

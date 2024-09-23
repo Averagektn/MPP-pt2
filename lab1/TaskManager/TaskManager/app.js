@@ -2,17 +2,16 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express = require("express");
 const path = require("path");
-const index_1 = require("./routes/index");
 const admin = require("firebase-admin");
-const debug = require('debug')('my express app');
-const app = express();
 const serviceAccount = require("./config/taskmanager-dedf9-firebase-adminsdk-uia8o-f0091c57e0.json");
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
-    databaseURL: "https://taskmanager-dedf9-default-rtdb.europe-west1.firebasedatabase.app"
+    databaseURL: "https://taskmanager-dedf9-default-rtdb.europe-west1.firebasedatabase.app",
+    storageBucket: "taskmanager-dedf9.appspot.com"
 });
-// WORKS!!!
-//admin.database().ref('/').push("test");
+const index_1 = require("./routes/index");
+const debug = require('debug')('my express app');
+const app = express();
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
