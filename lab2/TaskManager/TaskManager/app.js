@@ -13,15 +13,17 @@ admin.initializeApp({
 const index_1 = require("./routes/index");
 const debug = require('debug')('my express app');
 const app = express();
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(cors({
     origin: 'http://localhost:5173',
-    methods: ['GET', 'POST', 'PATHCH', 'DELETE', 'PUT'],
-    credentials: true
+    methods: ['GET', 'POST', 'PATHCH', 'DELETE', 'PUT', 'OPTIONS'],
+    credentials: true,
+    allowedHeaders: ['Content-Type']
 }));
-app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use('/', index_1.default);
+app.options('*', cors());
 app.set('port', process.env.PORT || 3000);
 const server = app.listen(app.get('port'), function () {
     debug(`Express server listening on port ${server.address().port}`);

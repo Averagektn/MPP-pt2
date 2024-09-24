@@ -30,10 +30,6 @@ const TaskList = () => {
         setFile(event.target.files[0]);
     };
 
-    const handleUpdateTask = async (event) => {
-
-    }
-
     const handleCreateTask = async (event) => {
         event.preventDefault();
 
@@ -76,6 +72,46 @@ const TaskList = () => {
         } catch (error) {
             console.error('Error:', error);
         }
+    };
+
+    const handleUpdate = async (taskId, date, status) => {
+        try {
+            const response = await fetch(`http://localhost:1337/tasks/${taskId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ date, status }), 
+            });
+
+            if (response.ok) {
+                const updatedTask = await response.json();
+                setTasks((prevTasks) =>
+                    prevTasks.map((task) =>
+                        task.id === taskId ? updatedTask : task
+                    )
+                );
+                console.log('Задача успешно обновлена!');
+            } else {
+                console.error('Ошибка при обновлении задачи:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Ошибка:', error);
+        }
+    };
+
+    const handleStatusChange = (taskId, event) => {
+        const updatedTasks = tasks.map((task) =>
+            task.id === taskId ? { ...task, status: event.target.value } : task
+        );
+        setTasks(updatedTasks);
+    };
+
+    const handleDateChange = (taskId, event) => {
+        const updatedTasks = tasks.map((task) =>
+            task.id === taskId ? { ...task, date: event.target.value } : task
+        );
+        setTasks(updatedTasks);
     };
 
     return (
@@ -127,22 +163,41 @@ const TaskList = () => {
                 </div>
 
                 <div className="row" style={{ textAlign: 'center' }}>
-                    {tasks.map((task, index) => (
-                        <div className="col" key={index}>
+                    {tasks.map((task) => (
+                        <div className="col" key={task.id}>
                             <strong>{task.TaskName}</strong>
                             <br />
                             {task.TaskDescription}
                             <br />
 
-                            <input type="date" name="date" />
+                            <input
+                                type="date"
+                                name="date"
+                                value={task.date || ''} // Используем значение из состояния
+                                onChange={(event) => handleDateChange(task.id, event)}
+                            />
                             <div className="box">
-                                <select name="status">
+                                <select
+                                    name="status"
+                                    value={task.status || 'None'} // Используем значение из состояния
+                                    onChange={(event) => handleStatusChange(task.id, event)}
+                                >
                                     {statuses.map((status) => (
-                                        <option value={status} selected={status === task.status}>{status}</option>
+                                        <option key={status} value={status}>
+                                            {status}
+                                        </option>
                                     ))}
                                 </select>
                             </div>
-                            <button type="submit" className="btn">Update</button>
+                            <button
+                                type="button"
+                                className="btn"
+                                onClick={() => {
+                                    handleUpdate(task.id, task.date, task.status);
+                                }}
+                            >
+                                Update
+                            </button>
 
                             <img src={task.photo} alt="Task Photo" />
 

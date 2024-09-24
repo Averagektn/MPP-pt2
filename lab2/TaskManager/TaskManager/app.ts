@@ -18,16 +18,19 @@ import routes from './routes/index';
 const debug = require('debug')('my express app');
 const app = express();
 
-app.use(cors({
+
+app.use(express.static(path.join(__dirname, 'public')));app.use(cors({
     origin: 'http://localhost:5173', 
-    methods: ['GET', 'POST', 'PATHCH', 'DELETE', 'PUT'], 
-    credentials: true
+    methods: ['GET', 'POST', 'PATHCH', 'DELETE', 'PUT', 'OPTIONS'], 
+    credentials: true,
+    allowedHeaders: ['Content-Type']
 }));
-app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
 app.use('/', routes);
+
+app.options('*', cors());
 
 app.set('port', process.env.PORT || 3000);
 
