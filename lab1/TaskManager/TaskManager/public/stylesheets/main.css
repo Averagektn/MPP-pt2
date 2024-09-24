@@ -47,7 +47,7 @@ body {
 }
 
 .col {
-    width: 250px
+    width: 210px
 }
 
 .row .col[class*="push-"], .row .col[class*="pull-"] {
