@@ -18,7 +18,7 @@ const upload = multer();
 const tasksDbRef = '/tasks-v1';
 const db = admin.database();
 const dbRef = db.ref(tasksDbRef);
-const stoageBucket = admin.storage().bucket();
+const storageBucket = admin.storage().bucket();
 router.post('/add-task', upload.single('file'), (req, res) => {
     const { name, description } = req.body;
     const file = req.file;
@@ -30,7 +30,7 @@ router.post('/add-task', upload.single('file'), (req, res) => {
         return;
     }
     try {
-        const blob = stoageBucket.file(generateUniqueFileName(file.originalname));
+        const blob = storageBucket.file(generateUniqueFileName(file.originalname));
         const blobStream = blob.createWriteStream({
             metadata: {
                 contentType: file.mimetype,
@@ -42,7 +42,7 @@ router.post('/add-task', upload.single('file'), (req, res) => {
         });
         blobStream.on('finish', () => __awaiter(void 0, void 0, void 0, function* () {
             yield blob.makePublic();
-            const publicUrl = `https://storage.googleapis.com/${stoageBucket.name}/${blob.name}`;
+            const publicUrl = `https://storage.googleapis.com/${storageBucket.name}/${blob.name}`;
             const task = new task_1.default(name, description, defaultStatus, null, null, publicUrl);
             dbRef.push(task);
             res.redirect('/');
@@ -62,7 +62,12 @@ router.post('/update-task', (req, res) => __awaiter(void 0, void 0, void 0, func
 }));
 router.post('/delete-task', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const id = req.body.taskId;
+    const path = req.body.path;
     yield db.ref(`${tasksDbRef}/${id}`).remove();
+    if (path) {
+        const fileName = path.split('/').pop();
+        yield storageBucket.file(fileName).delete();
+    }
     res.redirect('/');
 }));
 router.get('/filter', (req, res) => __awaiter(void 0, void 0, void 0, function* () {

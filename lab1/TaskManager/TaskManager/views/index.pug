@@ -46,4 +46,6 @@ block content
               img(src=task.photo)
             form(action="/delete-task" method="POST")
               input(type="hidden" value=task.id name="taskId")
+              if task.photo
+                input(type="hidden" value=task.photo name="path")
               button(type="submit" class="btn") Delete

@@ -9,7 +9,7 @@ const upload = multer();
 const tasksDbRef = '/tasks-v1';
 const db = admin.database();
 const dbRef = db.ref(tasksDbRef);
-const stoageBucket = admin.storage().bucket();
+const storageBucket = admin.storage().bucket();
 
 router.post('/add-task', upload.single('file'), (req: express.Request, res: express.Response) => {
     const { name, description } = req.body;
@@ -26,7 +26,7 @@ router.post('/add-task', upload.single('file'), (req: express.Request, res: expr
     }
 
     try {
-        const blob = stoageBucket.file(generateUniqueFileName(file.originalname));
+        const blob = storageBucket.file(generateUniqueFileName(file.originalname));
         const blobStream = blob.createWriteStream({
             metadata: {
                 contentType: file.mimetype,
@@ -40,7 +40,7 @@ router.post('/add-task', upload.single('file'), (req: express.Request, res: expr
 
         blobStream.on('finish', async () => {
             await blob.makePublic();
-            const publicUrl = `https://storage.googleapis.com/${stoageBucket.name}/${blob.name}`;
+            const publicUrl = `https://storage.googleapis.com/${storageBucket.name}/${blob.name}`;
             const task = new Task(name, description, defaultStatus, null, null, publicUrl);
 
             dbRef.push(task);
@@ -66,7 +66,13 @@ router.post('/update-task', async (req: express.Request, res: express.Response) 
 
 router.post('/delete-task', async (req: express.Request, res: express.Response) => {
     const id = req.body.taskId;
+    const path = req.body.path;
+
     await db.ref(`${tasksDbRef}/${id}`).remove();
+    if (path) {
+        const fileName = path.split('/').pop();
+        await storageBucket.file(fileName).delete();
+    }
 
     res.redirect('/');
 });

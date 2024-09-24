@@ -19,14 +19,14 @@ const tasksDbRef = '/tasks-v1';
 const db = admin.database();
 const dbRef = db.ref(tasksDbRef);
 const stoageBucket = admin.storage().bucket();
-router.post('/add-task', upload.single('file'), (req, res) => {
+router.post('/tasks', upload.single('file'), (req, res) => {
     const { name, description } = req.body;
     const file = req.file;
     const defaultStatus = "Pending";
     if (!file) {
         const task = new task_1.default(name, description, defaultStatus);
         dbRef.push(task);
-        res.redirect('/');
+        res.json(task);
         return;
     }
     try {
@@ -45,7 +45,7 @@ router.post('/add-task', upload.single('file'), (req, res) => {
             const publicUrl = `https://storage.googleapis.com/${stoageBucket.name}/${blob.name}`;
             const task = new task_1.default(name, description, defaultStatus, null, null, publicUrl);
             dbRef.push(task);
-            res.redirect('/');
+            res.json(task);
         }));
         blobStream.end(file.buffer);
     }
@@ -54,24 +54,33 @@ router.post('/add-task', upload.single('file'), (req, res) => {
         res.status(500).send('Error uploading file.');
     }
 });
-router.post('/update-task', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const id = req.body.taskId;
+router.put('/tasks/:id', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const id = req.params.id;
     const { date, status } = req.body;
     yield db.ref(`${tasksDbRef}/${id}`).update({ date, status });
     res.redirect('/');
 }));
-router.post('/delete-task', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const id = req.body.taskId;
-    yield db.ref(`${tasksDbRef}/${id}`).remove();
-    res.redirect('/');
-}));
-router.get('/filter', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const tasks = yield getTasks();
-    const status = req.query.status;
-    if (status === 'None') {
-        res.redirect('/');
+router.delete('/tasks/:id', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const id = req.params.id;
+    try {
+        yield db.ref(`${tasksDbRef}/${id}`).remove();
+        res.status(204);
     }
-    else {
+    catch (error) {
+        res.status(400).json({ error: 'Failed to delete task' });
+    }
+}));
+router.get('/tasks/filter', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const status = req.query.status;
+    let tasks = [];
+    try {
+        tasks = yield getTasksWithId();
+    }
+    catch (err) {
+        res.status(400).json({ error: 'Failed to retrieve tasks' });
+        return;
+    }
+    if (status !== 'None') {
         tasks.sort((a, b) => {
             if (a.status === status && b.status !== status) {
                 return -1;
@@ -81,14 +90,36 @@ router.get('/filter', (req, res) => __awaiter(void 0, void 0, void 0, function* 
             }
             return 0;
         });
-        res.render('index', { tasks, filterStatus: status });
+    }
+    res.json(tasks);
+}));
+router.get('/tasks', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const tasks = yield getTasksWithId();
+        res.json(tasks);
+    }
+    catch (error) {
+        res.status(400).json({ error: 'Failed to retrieve tasks' });
     }
 }));
-router.get('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const tasks = yield getTasks();
-    res.render('index', { tasks });
+router.get('/tasks/:id', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const id = req.params.id;
+    const limit = parseInt(req.query.limit, 10);
+    try {
+        if (limit) {
+            const tasks = yield getPaginatedTasks(limit, id);
+            res.json(tasks);
+        }
+        else {
+            const task = yield db.ref(`${tasksDbRef}/${id}`).get();
+            res.json(task);
+        }
+    }
+    catch (error) {
+        res.status(400).json({ error: 'Failed to retrieve task' });
+    }
 }));
-function getTasks() {
+function getTasksWithId() {
     return __awaiter(this, void 0, void 0, function* () {
         const tasks = [];
         const snapshot = yield dbRef.get();
@@ -100,6 +131,23 @@ function getTasks() {
             });
         }
         return tasks;
+    });
+}
+function getPaginatedTasks(n, lastKey) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let query = dbRef.orderByKey().limitToFirst(n);
+        if (lastKey) {
+            query = query.startAt(lastKey);
+        }
+        const snapshot = yield query.once('value');
+        const records = snapshot.val();
+        const result = Object.entries(records).map(([key, value]) => {
+            if (value && typeof value === 'object') {
+                return Object.assign({ id: key }, value);
+            }
+            return null;
+        }).filter((item) => item !== null);
+        return result;
     });
 }
 function generateUniqueFileName(originalName) {
