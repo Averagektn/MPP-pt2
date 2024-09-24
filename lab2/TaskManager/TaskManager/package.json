@@ -13,6 +13,7 @@
   },
   "main": "app.js",
   "dependencies": {
+    "cors": "^2.8.5",
     "debug": "^2.6.9",
     "express": "^4.21.0",
     "firebase": "^10.13.2",
