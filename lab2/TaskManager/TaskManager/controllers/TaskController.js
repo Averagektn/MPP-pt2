@@ -14,50 +14,45 @@ const TaskRepository_1 = require("../repositroies/TaskRepository");
 class TaskController {
     createTask(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { name, description } = req.body;
-            const file = req.file;
+            const { name, description, photo } = req.body;
             const defaultStatus = "Pending";
-            if (!file) {
-                const task = new Task_1.default(name, description, defaultStatus);
-                TaskRepository_1.default.createTask(task);
-                res.json(task);
+            let task = new Task_1.default(name, description, defaultStatus, null, null, photo);
+            task = TaskRepository_1.default.createTask(task);
+            res.status(201).json(task);
+        });
+    }
+    uploadFile(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const file = req.file;
+            try {
+                const filePath = yield TaskRepository_1.default.uploadFile(file);
+                res.status(201).json(filePath);
             }
-            else {
-                const onError = (err) => {
-                    console.error(err);
-                    res.status(500).send('Failed to upload to Firebase Storage.');
-                };
-                const onFinish = (task) => {
-                    res.json(task);
-                };
-                try {
-                    yield TaskRepository_1.default.loadFile(file, null, onFinish, onError);
-                }
-                catch (error) {
-                    console.error('Error uploading file:', error);
-                    res.status(400).send('Error uploading file.');
-                }
+            catch (error) {
+                console.error('Error uploading file:', error);
+                res.status(404).send('Error uploading file.');
             }
         });
     }
     updateTask(req, res) {
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
             const id = req.params.id;
-            const task = Object.assign({}, req.body);
-            yield TaskRepository_1.default.updateTask(id, task.date, task.status);
-            res.json(task);
+            let task = Object.assign({}, req.body);
+            task = yield TaskRepository_1.default.updateTask(id, (_a = task.date) !== null && _a !== void 0 ? _a : null, (_b = task.status) !== null && _b !== void 0 ? _b : null);
+            res.status(200).json(task);
         });
     }
     deleteTask(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const id = req.params.id;
-            const path = req.body.path;
+            const path = (yield TaskRepository_1.default.getTaskById(id)).photo;
             try {
                 yield TaskRepository_1.default.deleteTask(id, path);
-                res.status(204);
+                res.status(204).send();
             }
             catch (error) {
-                res.status(400).json({ error: 'Failed to delete task' });
+                res.status(404).json({ error: 'Failed to delete task' });
             }
         });
     }
@@ -66,10 +61,10 @@ class TaskController {
             const status = req.query.status;
             let tasks = [];
             try {
-                tasks = yield TaskRepository_1.default.getTasksWithId();
+                tasks = yield TaskRepository_1.default.getTasks();
             }
             catch (err) {
-                res.status(400).json({ error: 'Failed to retrieve tasks' });
+                res.status(404).json({ error: 'Failed to retrieve tasks' });
                 return;
             }
             if (status !== 'None') {
@@ -83,7 +78,7 @@ class TaskController {
                     return 0;
                 });
             }
-            res.json(tasks);
+            res.status(200).json(tasks);
         });
     }
     ;
@@ -94,15 +89,15 @@ class TaskController {
             try {
                 let tasks = [];
                 if (limit) {
-                    tasks = yield TaskRepository_1.default.getPaginatedTasksWithId(limit, startWithId);
+                    tasks = yield TaskRepository_1.default.getPageTasks(limit, startWithId);
                     res.json(tasks);
                     return;
                 }
-                tasks = yield TaskRepository_1.default.getTasksWithId();
-                res.json(tasks);
+                tasks = yield TaskRepository_1.default.getTasks();
+                res.status(200).json(tasks);
             }
             catch (error) {
-                res.status(400).json({ error: 'Failed to retrieve tasks' });
+                res.status(404).json({ error: 'Failed to retrieve tasks' });
             }
         });
     }
@@ -111,10 +106,10 @@ class TaskController {
             const id = req.params.id;
             try {
                 const task = yield TaskRepository_1.default.getTaskById(id);
-                res.json(task);
+                res.status(200).json(task);
             }
             catch (error) {
-                res.status(400).json({ error: 'Failed to retrieve task' });
+                res.status(404).json({ error: 'Failed to retrieve task' });
             }
         });
     }

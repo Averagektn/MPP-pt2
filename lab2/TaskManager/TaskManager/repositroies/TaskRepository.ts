@@ -16,32 +16,32 @@ class TaskRepository {
         this.storageBucket = admin.storage().bucket();
     }
 
-    createTask(task: Task) {
-        this.dbRef.push(task);
+    createTask(task: Task): Task {
+        const ref = this.dbRef.push(task);
+        task.id = ref.key;
+
+        return task
     }
 
-    async loadFile(file: any, task: Task, onFinish: CallableFunction, onError: CallableFunction): Promise<void> {
+    async uploadFile(file: any): Promise<string> {
         const blob = this.storageBucket.file(generateUniqueFileName(file.originalname));
-        const blobStream = blob.createWriteStream({
-            metadata: {
-                contentType: file.mimetype,
-            },
+
+        await new Promise((resolve, reject) => {
+            const blobStream = blob.createWriteStream({
+                metadata: {
+                    contentType: file.mimetype,
+                },
+            });
+
+            blobStream.on('error', reject);
+            blobStream.on('finish', resolve);
+            blobStream.end(file.buffer);
         });
 
-        blobStream.on('error', (err) => {
-            onError(err);
-        });
+        await blob.makePublic();
+        const publicUrl = `https://storage.googleapis.com/${this.storageBucket.name}/${blob.name}`;
 
-        blobStream.on('finish', async () => {
-            await blob.makePublic();
-            const publicUrl = `https://storage.googleapis.com/${this.storageBucket.name}/${blob.name}`;
-            task.photo = publicUrl;
-
-            this.createTask(task);
-            onFinish(task);
-        });
-
-        blobStream.end(file.buffer);
+        return publicUrl;
     }
 
     async deleteTask(id: string, path: string | null): Promise<void> {
@@ -53,16 +53,24 @@ class TaskRepository {
     }
 
     async getTaskById(id: string): Promise<Task> {
-        const res = await this.db.ref(`${this.tasksDbRef}/${id}`).get();
+        const res = (await this.db.ref(`${this.tasksDbRef}/${id}`).get()).val();
 
-        return res.val();
+        return { ...res, id };
     }
 
-    async updateTask(id: string, date: string | null, status: string | null): Promise<void> {
-        await this.db.ref(`${this.tasksDbRef}/${id}`).update({ date, status })
+    async updateTask(id: string, date: string | null, status: string | null): Promise<Task> {
+        if (date) {
+            await this.db.ref(`${this.tasksDbRef}/${id}`).update({ date })
+        }
+        if (status) {
+            await this.db.ref(`${this.tasksDbRef}/${id}`).update({ status })
+        }
+
+        const task = (await this.db.ref(`${this.tasksDbRef}/${id}`).get()).val();
+        return { ...task, id };
     }
 
-    async getTasksWithId(): Promise<Task[]> {
+    async getTasks(): Promise<Task[]> {
         const tasks: Task[] = [];
         const snapshot = await this.dbRef.get();
 
@@ -77,7 +85,7 @@ class TaskRepository {
         return tasks;
     }
 
-    async getPaginatedTasksWithId(n: number, lastKey: string | null): Promise<Task[]> {
+    async getPageTasks(n: number, lastKey: string | null): Promise<Task[]> {
         let query = this.dbRef.orderByKey().limitToFirst(n);
         const tasks: Task[] = [];
 

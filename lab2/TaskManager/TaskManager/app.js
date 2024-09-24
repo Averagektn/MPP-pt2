@@ -12,11 +12,9 @@ admin.initializeApp({
 const index_1 = require("./routes/index");
 const debug = require('debug')('my express app');
 const app = express();
-// view engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'pug');
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
 app.use('/', index_1.default);
 app.set('port', process.env.PORT || 3000);
 const server = app.listen(app.get('port'), function () {

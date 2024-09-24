@@ -4,50 +4,44 @@ import taskRepository from '../repositroies/TaskRepository';
 
 class TaskController {
     async createTask(req: express.Request, res: express.Response): Promise<void> {
-        const { name, description } = req.body;
-        const file = req.file;
+        const { name, description, photo } = req.body;
         const defaultStatus = "Pending";
+        let task = new Task(name, description, defaultStatus, null, null, photo);
 
-        if (!file) {
-            const task = new Task(name, description, defaultStatus);
-            taskRepository.createTask(task);
+        task = taskRepository.createTask(task);
+        res.status(201).json(task);
+    }
 
-            res.json(task);
-        } else {
-            const onError = (err: Error) => {
-                console.error(err);
-                res.status(500).send('Failed to upload to Firebase Storage.');
-            }
-            const onFinish = (task: Task) => {
-                res.json(task);
-            }
-            try {
-                await taskRepository.loadFile(file, null, onFinish, onError);
-            } catch (error) {
-                console.error('Error uploading file:', error);
-                res.status(400).send('Error uploading file.');
-            }
+    async uploadFile(req: express.Request, res: express.Response): Promise<void> {
+        const file = req.file;
+
+        try {
+            const filePath = await taskRepository.uploadFile(file);
+            res.status(201).json(filePath);
+        } catch (error) {
+            console.error('Error uploading file:', error);
+            res.status(404).send('Error uploading file.');
         }
     }
 
     async updateTask(req: express.Request, res: express.Response): Promise<void> {
         const id = req.params.id;
-        const task: Task = { ...req.body };
+        let task: Task = { ...req.body };
 
-        await taskRepository.updateTask(id, task.date, task.status);
+        task = await taskRepository.updateTask(id, task.date ?? null, task.status ?? null);
 
-        res.json(task);
+        res.status(200).json(task);
     }
 
     async deleteTask(req: express.Request, res: express.Response): Promise<void> {
         const id = req.params.id;
-        const path = req.body.path;
+        const path = (await taskRepository.getTaskById(id)).photo;
 
         try {
             await taskRepository.deleteTask(id, path);
-            res.status(204);
+            res.status(204).send();
         } catch (error) {
-            res.status(400).json({ error: 'Failed to delete task' });
+            res.status(404).json({ error: 'Failed to delete task' });
         }
     }
 
@@ -56,9 +50,9 @@ class TaskController {
         let tasks: Task[] = [];
 
         try {
-            tasks = await taskRepository.getTasksWithId();
+            tasks = await taskRepository.getTasks();
         } catch (err) {
-            res.status(400).json({ error: 'Failed to retrieve tasks' });
+            res.status(404).json({ error: 'Failed to retrieve tasks' });
             return;
         }
 
@@ -74,7 +68,7 @@ class TaskController {
             });
         }
 
-        res.json(tasks)
+        res.status(200).json(tasks)
     };
 
     async getTasks(req: express.Request, res: express.Response): Promise<void> {
@@ -84,14 +78,14 @@ class TaskController {
         try {
             let tasks: Task[] = [];
             if (limit) {
-                tasks = await taskRepository.getPaginatedTasksWithId(limit, startWithId);
+                tasks = await taskRepository.getPageTasks(limit, startWithId);
                 res.json(tasks);
                 return;
             }
-            tasks = await taskRepository.getTasksWithId();
-            res.json(tasks);
+            tasks = await taskRepository.getTasks();
+            res.status(200).json(tasks);
         } catch (error) {
-            res.status(400).json({ error: 'Failed to retrieve tasks' });
+            res.status(404).json({ error: 'Failed to retrieve tasks' });
         }
     }
 
@@ -100,9 +94,9 @@ class TaskController {
 
         try {
             const task = await taskRepository.getTaskById(id);
-            res.json(task);
+            res.status(200).json(task);
         } catch (error) {
-            res.status(400).json({ error: 'Failed to retrieve task' });
+            res.status(404).json({ error: 'Failed to retrieve task' });
         }
     };
 }

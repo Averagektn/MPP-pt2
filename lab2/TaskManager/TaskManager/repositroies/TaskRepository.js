@@ -19,27 +19,26 @@ class TaskRepository {
         this.storageBucket = admin.storage().bucket();
     }
     createTask(task) {
-        this.dbRef.push(task);
+        const ref = this.dbRef.push(task);
+        task.id = ref.key;
+        return task;
     }
-    loadFile(file, task, onFinish, onError) {
+    uploadFile(file) {
         return __awaiter(this, void 0, void 0, function* () {
             const blob = this.storageBucket.file((0, file_name_generator_1.default)(file.originalname));
-            const blobStream = blob.createWriteStream({
-                metadata: {
-                    contentType: file.mimetype,
-                },
+            yield new Promise((resolve, reject) => {
+                const blobStream = blob.createWriteStream({
+                    metadata: {
+                        contentType: file.mimetype,
+                    },
+                });
+                blobStream.on('error', reject);
+                blobStream.on('finish', resolve);
+                blobStream.end(file.buffer);
             });
-            blobStream.on('error', (err) => {
-                onError(err);
-            });
-            blobStream.on('finish', () => __awaiter(this, void 0, void 0, function* () {
-                yield blob.makePublic();
-                const publicUrl = `https://storage.googleapis.com/${this.storageBucket.name}/${blob.name}`;
-                task.photo = publicUrl;
-                this.createTask(task);
-                onFinish(task);
-            }));
-            blobStream.end(file.buffer);
+            yield blob.makePublic();
+            const publicUrl = `https://storage.googleapis.com/${this.storageBucket.name}/${blob.name}`;
+            return publicUrl;
         });
     }
     deleteTask(id, path) {
@@ -53,16 +52,23 @@ class TaskRepository {
     }
     getTaskById(id) {
         return __awaiter(this, void 0, void 0, function* () {
-            const res = yield this.db.ref(`${this.tasksDbRef}/${id}`).get();
-            return res.val();
+            const res = (yield this.db.ref(`${this.tasksDbRef}/${id}`).get()).val();
+            return Object.assign(Object.assign({}, res), { id });
         });
     }
     updateTask(id, date, status) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.db.ref(`${this.tasksDbRef}/${id}`).update({ date, status });
+            if (date) {
+                yield this.db.ref(`${this.tasksDbRef}/${id}`).update({ date });
+            }
+            if (status) {
+                yield this.db.ref(`${this.tasksDbRef}/${id}`).update({ status });
+            }
+            const task = (yield this.db.ref(`${this.tasksDbRef}/${id}`).get()).val();
+            return Object.assign(Object.assign({}, task), { id });
         });
     }
-    getTasksWithId() {
+    getTasks() {
         return __awaiter(this, void 0, void 0, function* () {
             const tasks = [];
             const snapshot = yield this.dbRef.get();
@@ -76,7 +82,7 @@ class TaskRepository {
             return tasks;
         });
     }
-    getPaginatedTasksWithId(n, lastKey) {
+    getPageTasks(n, lastKey) {
         return __awaiter(this, void 0, void 0, function* () {
             let query = this.dbRef.orderByKey().limitToFirst(n);
             const tasks = [];
