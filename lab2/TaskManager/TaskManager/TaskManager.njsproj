@@ -35,24 +35,27 @@
     <Content Include="config\taskmanager-dedf9-firebase-adminsdk-uia8o-f0091c57e0.json" />
     <Content Include="tsconfig.json" />
     <Content Include="package.json" />
-    <Content Include="public\stylesheets\main.css" />
     <Content Include="README.md" />
-    <Content Include="views\index.pug" />
-    <Content Include="views\layout.pug" />
-    <Content Include="views\error.pug" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="config\" />
     <Folder Include="model\" />
-    <Folder Include="public\" />
-    <Folder Include="public\images\" />
-    <Folder Include="public\javascripts\" />
-    <Folder Include="public\stylesheets\" />
+    <Folder Include="controllers\" />
+    <Folder Include="utils\" />
+    <Folder Include="repositroies\" />
     <Folder Include="routes\" />
-    <Folder Include="views\" />
   </ItemGroup>
   <ItemGroup>
-    <TypeScriptCompile Include="model\task.ts">
+    <TypeScriptCompile Include="controllers\TaskController.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include="model\Task.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include="repositroies\TaskRepository.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include="utils\file_name_generator.ts">
       <SubType>Code</SubType>
     </TypeScriptCompile>
   </ItemGroup>

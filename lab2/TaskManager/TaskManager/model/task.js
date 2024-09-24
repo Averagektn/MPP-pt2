@@ -11,4 +11,4 @@ class Task {
     }
 }
 exports.default = Task;
-//# sourceMappingURL=task.js.map
+//# sourceMappingURL=Task.js.map

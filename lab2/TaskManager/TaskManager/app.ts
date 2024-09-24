@@ -3,6 +3,7 @@ import { AddressInfo } from "net";
 import * as path from 'path';
 
 import * as admin from 'firebase-admin';
+
 const serviceAccount = require("./config/taskmanager-dedf9-firebase-adminsdk-uia8o-f0091c57e0.json");
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
@@ -23,37 +24,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: false }));
 
 app.use('/', routes);
-
-// catch 404 and forward to error handler
-app.use((req, res, next) => {
-    const err = new Error('Not Found');
-    err[ 'status' ] = 404;
-    next(err);
-});
-
-// error handlers
-
-// development error handler
-// will print stacktrace
-if (app.get('env') === 'development') {
-    app.use((err, req, res, next) => { // eslint-disable-line @typescript-eslint/no-unused-vars
-        res.status(err[ 'status' ] || 500);
-        res.render('error', {
-            message: err.message,
-            error: err
-        });
-    });
-}
-
-// production error handler
-// no stacktraces leaked to user
-app.use((err, req, res, next) => { // eslint-disable-line @typescript-eslint/no-unused-vars
-    res.status(err.status || 500);
-    res.render('error', {
-        message: err.message,
-        error: {}
-    });
-});
 
 app.set('port', process.env.PORT || 3000);
 
