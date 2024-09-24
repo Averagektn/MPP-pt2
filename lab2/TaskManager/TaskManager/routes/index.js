@@ -18,7 +18,7 @@ const upload = multer();
 const tasksDbRef = '/tasks-v1';
 const db = admin.database();
 const dbRef = db.ref(tasksDbRef);
-const stoageBucket = admin.storage().bucket();
+const storageBucket = admin.storage().bucket();
 router.post('/tasks', upload.single('file'), (req, res) => {
     const { name, description } = req.body;
     const file = req.file;
@@ -30,7 +30,7 @@ router.post('/tasks', upload.single('file'), (req, res) => {
         return;
     }
     try {
-        const blob = stoageBucket.file(generateUniqueFileName(file.originalname));
+        const blob = storageBucket.file(generateUniqueFileName(file.originalname));
         const blobStream = blob.createWriteStream({
             metadata: {
                 contentType: file.mimetype,
@@ -42,7 +42,7 @@ router.post('/tasks', upload.single('file'), (req, res) => {
         });
         blobStream.on('finish', () => __awaiter(void 0, void 0, void 0, function* () {
             yield blob.makePublic();
-            const publicUrl = `https://storage.googleapis.com/${stoageBucket.name}/${blob.name}`;
+            const publicUrl = `https://storage.googleapis.com/${storageBucket.name}/${blob.name}`;
             const task = new task_1.default(name, description, defaultStatus, null, null, publicUrl);
             dbRef.push(task);
             res.json(task);
@@ -62,8 +62,13 @@ router.put('/tasks/:id', (req, res) => __awaiter(void 0, void 0, void 0, functio
 }));
 router.delete('/tasks/:id', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const id = req.params.id;
+    const path = req.body.path;
     try {
         yield db.ref(`${tasksDbRef}/${id}`).remove();
+        if (path) {
+            const fileName = path.split('/').pop();
+            yield storageBucket.file(fileName).delete();
+        }
         res.status(204);
     }
     catch (error) {
@@ -94,8 +99,16 @@ router.get('/tasks/filter', (req, res) => __awaiter(void 0, void 0, void 0, func
     res.json(tasks);
 }));
 router.get('/tasks', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const limit = parseInt(req.query.limit, null);
+    const startWithId = req.query.startWithId;
     try {
-        const tasks = yield getTasksWithId();
+        let tasks = [];
+        if (limit) {
+            tasks = yield getPaginatedTasks(limit, startWithId);
+            res.json(tasks);
+            return;
+        }
+        tasks = yield getTasksWithId();
         res.json(tasks);
     }
     catch (error) {
@@ -104,16 +117,9 @@ router.get('/tasks', (req, res) => __awaiter(void 0, void 0, void 0, function* (
 }));
 router.get('/tasks/:id', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const id = req.params.id;
-    const limit = parseInt(req.query.limit, 10);
     try {
-        if (limit) {
-            const tasks = yield getPaginatedTasks(limit, id);
-            res.json(tasks);
-        }
-        else {
-            const task = yield db.ref(`${tasksDbRef}/${id}`).get();
-            res.json(task);
-        }
+        const task = yield db.ref(`${tasksDbRef}/${id}`).get();
+        res.json(task);
     }
     catch (error) {
         res.status(400).json({ error: 'Failed to retrieve task' });
@@ -136,18 +142,19 @@ function getTasksWithId() {
 function getPaginatedTasks(n, lastKey) {
     return __awaiter(this, void 0, void 0, function* () {
         let query = dbRef.orderByKey().limitToFirst(n);
+        const tasks = [];
         if (lastKey) {
             query = query.startAt(lastKey);
         }
         const snapshot = yield query.once('value');
-        const records = snapshot.val();
-        const result = Object.entries(records).map(([key, value]) => {
-            if (value && typeof value === 'object') {
-                return Object.assign({ id: key }, value);
-            }
-            return null;
-        }).filter((item) => item !== null);
-        return result;
+        if (snapshot.exists()) {
+            snapshot.forEach((childSnapshot) => {
+                const data = childSnapshot.val();
+                const id = childSnapshot.key;
+                tasks.push(Object.assign(Object.assign({}, data), { id }));
+            });
+        }
+        return tasks;
     });
 }
 function generateUniqueFileName(originalName) {

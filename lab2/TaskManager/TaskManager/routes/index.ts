@@ -9,7 +9,7 @@ const upload = multer();
 const tasksDbRef = '/tasks-v1';
 const db = admin.database();
 const dbRef = db.ref(tasksDbRef);
-const stoageBucket = admin.storage().bucket();
+const storageBucket = admin.storage().bucket();
 
 router.post('/tasks', upload.single('file'), (req: express.Request, res: express.Response) => {
     const { name, description } = req.body;
@@ -26,7 +26,7 @@ router.post('/tasks', upload.single('file'), (req: express.Request, res: express
     }
 
     try {
-        const blob = stoageBucket.file(generateUniqueFileName(file.originalname));
+        const blob = storageBucket.file(generateUniqueFileName(file.originalname));
         const blobStream = blob.createWriteStream({
             metadata: {
                 contentType: file.mimetype,
@@ -40,7 +40,7 @@ router.post('/tasks', upload.single('file'), (req: express.Request, res: express
 
         blobStream.on('finish', async () => {
             await blob.makePublic();
-            const publicUrl = `https://storage.googleapis.com/${stoageBucket.name}/${blob.name}`;
+            const publicUrl = `https://storage.googleapis.com/${storageBucket.name}/${blob.name}`;
             const task = new Task(name, description, defaultStatus, null, null, publicUrl);
 
             dbRef.push(task);
@@ -66,9 +66,14 @@ router.put('/tasks/:id', async (req: express.Request, res: express.Response) => 
 
 router.delete('/tasks/:id', async (req: express.Request, res: express.Response) => {
     const id = req.params.id; 
+    const path = req.body.path;
 
     try {
         await db.ref(`${tasksDbRef}/${id}`).remove();
+        if (path) {
+            const fileName = path.split('/').pop();
+            await storageBucket.file(fileName).delete();
+        }
         res.status(204);
     } catch (error) {
         res.status(400).json({ error: 'Failed to delete task' });
@@ -102,8 +107,17 @@ router.get('/tasks/filter', async (req: express.Request, res: express.Response) 
 });
 
 router.get('/tasks', async (req: express.Request, res: express.Response) => {
+    const limit = parseInt(req.query.limit as string, null);
+    const startWithId = req.query.startWithId as string;
+
     try {
-        const tasks = await getTasksWithId();
+        let tasks: Task[] = [];
+        if (limit) {
+            tasks = await getPaginatedTasks(limit, startWithId);
+            res.json(tasks);
+            return;
+        }
+        tasks = await getTasksWithId();
         res.json(tasks);
     } catch (error) {
         res.status(400).json({ error: 'Failed to retrieve tasks' });
@@ -112,16 +126,10 @@ router.get('/tasks', async (req: express.Request, res: express.Response) => {
 
 router.get('/tasks/:id', async (req: express.Request, res: express.Response) => {
     const id = req.params.id;
-    const limit = parseInt(req.query.limit as string, 10);
 
     try {
-        if (limit) {
-            const tasks = await getPaginatedTasks(limit, id);
-            res.json(tasks);
-        } else {
-            const task = await db.ref(`${tasksDbRef}/${id}`).get();
-            res.json(task);
-        }
+        const task = await db.ref(`${tasksDbRef}/${id}`).get();
+        res.json(task);
     } catch (error) {
         res.status(400).json({ error: 'Failed to retrieve task' });
     }
@@ -142,24 +150,25 @@ async function getTasksWithId(): Promise<Task[]> {
     return tasks;
 }
 
-async function getPaginatedTasks(n: number, lastKey?: string) {
+async function getPaginatedTasks(n: number, lastKey: string | null): Promise<Task[]> {
     let query = dbRef.orderByKey().limitToFirst(n);
+    const tasks: Task[] = [];
 
     if (lastKey) {
         query = query.startAt(lastKey);
     }
 
     const snapshot = await query.once('value');
-    const records = snapshot.val();
 
-    const result = Object.entries(records).map(([key, value]) => {
-        if (value && typeof value === 'object') {
-            return { id: key, ...value };
-        }
-        return null;
-    }).filter((item): item is { id: string;[key: string]: any } => item !== null);
+    if (snapshot.exists()) {
+        snapshot.forEach((childSnapshot) => {
+            const data = childSnapshot.val();
+            const id = childSnapshot.key;
+            tasks.push({ ...data, id });
+        });
+    } 
 
-    return result;
+    return tasks;
 }
 
 function generateUniqueFileName(originalName: string): string {
