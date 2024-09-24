@@ -1,44 +1,81 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import '../public/stylesheets/main.css'
 import React from 'react'
 
 const TaskList = () => {
-    const [tasks, setTasks] = useState([]);
-    const [newTask, setNewTask] = useState({ name: '', description: '', file: null });
-    const [filter, setFilter] = useState('None');
+    const [taskName, setTaskName] = useState('');
+    const [taskDescription, setTaskDescription] = useState('');
+    const [file, setFile] = useState(null);
+    const [tasks, setTasks] = useState([]); 
+    const statuses = ['Pending', 'Rejected', 'Accepted'];
 
-    const handleAddTask = (e) => {
-        e.preventDefault();
-        // Logic to add a new task
+    useEffect(() => {
+        const fetchTasks = async () => {
+            try {
+                const response = await fetch('http://localhost:1337/tasks');
+                if (!response.ok) {
+                    throw new Error('Tasks loading error');
+                }
+                const data = await response.json();
+                setTasks(data); 
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        };
+
+        fetchTasks(); 
+    }, []); 
+
+    const handleFileChange = (event) => {
+        setFile(event.target.files[0]);
+    };
+
+    const handleUpdateTask = async (event) => {
+
+    }
+
+    const handleCreateTask = async (event) => {
+        event.preventDefault();
+
+        if (!file) return;
+
         const formData = new FormData();
-        formData.append('name', newTask.name);
-        formData.append('description', newTask.description);
-        formData.append('file', newTask.file);
+        formData.append('file', file);
 
-        // Fetch API call to add task
-        fetch('/add-task', { method: 'POST', body: formData })
-            .then(response => response.json())
-            .then(data => setTasks([...tasks, data]));
+        try {
+            const response = await fetch('http://localhost:1337/tasks/photo', {
+                method: 'POST',
+                body: formData,
+            });
 
-        // Reset form
-        setNewTask({ name: '', description: '', file: null });
-    };
+            const { photo } = await response.json();
 
-    const handleFileChange = (e) => {
-        setNewTask({ ...newTask, file: e.target.files[0] });
-    };
+            const taskData = {
+                name: taskName,
+                description: taskDescription,
+                photo: photo,
+            };
 
-    const handleFilterChange = (e) => {
-        setFilter(e.target.value);
-        // Logic to filter tasks based on status
-    };
+            const taskResponse = await fetch('http://localhost:1337/tasks', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(taskData),
+            });
 
-    const handleUpdateTask = (taskId) => {
-        // Logic to update a task
-    };
-
-    const handleDeleteTask = (taskId) => {
-        // Logic to delete a task
+            if (taskResponse.ok) {
+                setTasks((prevTasks) => [...prevTasks, taskData]);
+                setTaskName('');
+                setTaskDescription('');
+                setFile(null);
+                console.log('Task added');
+            } else {
+                console.error('Task add error:', taskResponse.statusText);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
     };
 
     return (
@@ -47,22 +84,22 @@ const TaskList = () => {
             <hr />
             <section>
                 <div className="row">
-                    <form onSubmit={handleAddTask}>
+                    <form onSubmit={handleCreateTask}>
                         <input
                             type="text"
                             name="name"
                             placeholder="Task name"
+                            value={taskName}
+                            onChange={(e) => setTaskName(e.target.value)}
                             required
-                            value={newTask.name}
-                            onChange={(e) => setNewTask({ ...newTask, name: e.target.value })}
                         />
                         <input
                             type="text"
                             name="description"
                             placeholder="Task description"
+                            value={taskDescription}
+                            onChange={(e) => setTaskDescription(e.target.value)}
                             required
-                            value={newTask.description}
-                            onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
                         />
                         <input
                             type="file"
@@ -76,13 +113,13 @@ const TaskList = () => {
                 </div>
 
                 <div className="row">
-                    <form onSubmit={(e) => { e.preventDefault(); handleFilterChange(e); }}>
+                    <form>
                         <div className="box">
-                            <select name="status" value={filter} onChange={handleFilterChange}>
+                            <select name="status">
                                 <option value="None">None</option>
-                                <option value="Pending">Pending</option>
-                                <option value="Done">Done</option>
-                                <option value="Rejected">Rejected</option>
+                                {statuses.map((status) => (
+                                    <option value={status}>{status}</option>
+                                ))}
                             </select>
                             <button type="submit" className="btn">Filter</button>
                         </div>
@@ -90,30 +127,26 @@ const TaskList = () => {
                 </div>
 
                 <div className="row" style={{ textAlign: 'center' }}>
-                    {tasks.map(task => (
-                        <div className="col" key={task.id}>
-                            <strong>{task.name}:</strong>
+                    {tasks.map((task, index) => (
+                        <div className="col" key={index}>
+                            <strong>{task.TaskName}</strong>
                             <br />
-                            {task.description}
+                            {task.TaskDescription}
                             <br />
-                            <form onSubmit={(e) => { e.preventDefault(); handleUpdateTask(task.id); }}>
-                                <input type="date" name="date" defaultValue={task.date} />
-                                <div className="box">
-                                    <select name="status" defaultValue={task.status}>
-                                        <option value="None">None</option>
-                                        <option value="Pending">Pending</option>
-                                        <option value="Done">Done</option>
-                                        <option value="Rejected">Rejected</option>
-                                    </select>
-                                </div>
-                                <button type="submit" className="btn">Update</button>
-                            </form>
+
+                            <input type="date" name="date" />
+                            <div className="box">
+                                <select name="status">
+                                    {statuses.map((status) => (
+                                        <option value={status} selected={status === task.status}>{status}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <button type="submit" className="btn">Update</button>
 
                             <img src={task.photo} alt="Task Photo" />
 
-                            <form onSubmit={(e) => { e.preventDefault(); handleDeleteTask(task.id); }}>
-                                <button type="submit" className="btn">Delete</button>
-                            </form>
+                            <button type="submit" className="btn">Delete</button>
                         </div>
                     ))}
                 </div>
