@@ -59,6 +59,8 @@ class TaskController {
     filterTasks(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const status = req.query.status;
+            const limit = parseInt(req.query.limit, null);
+            const startWith = parseInt(req.query.startWith, null);
             let tasks = [];
             try {
                 tasks = yield TaskRepository_1.default.getTasks();
@@ -78,6 +80,14 @@ class TaskController {
                     return 0;
                 });
             }
+            if (!isNaN(limit) && !isNaN(startWith)) {
+                if (tasks.length < (startWith + 1) * limit) {
+                    tasks = tasks.slice(startWith * limit);
+                }
+                else {
+                    tasks = tasks.slice(startWith * limit, (startWith + 1) * limit);
+                }
+            }
             res.status(200).json(tasks);
         });
     }
@@ -87,20 +97,16 @@ class TaskController {
             const limit = parseInt(req.query.limit, null);
             const startWith = parseInt(req.query.startWith, null);
             try {
-                let tasks = [];
+                let tasks = yield TaskRepository_1.default.getTasks();
+                ;
                 if (!isNaN(limit) && !isNaN(startWith)) {
-                    tasks = yield TaskRepository_1.default.getTasks();
-                    let result;
                     if (tasks.length < (startWith + 1) * limit) {
-                        result = tasks.slice(startWith * limit);
+                        tasks = tasks.slice(startWith * limit);
                     }
                     else {
-                        result = tasks.slice(startWith * limit, (startWith + 1) * limit);
+                        tasks = tasks.slice(startWith * limit, (startWith + 1) * limit);
                     }
-                    res.json(result);
-                    return;
                 }
-                tasks = yield TaskRepository_1.default.getTasks();
                 res.status(200).json(tasks);
             }
             catch (error) {

@@ -63,9 +63,13 @@ const TaskList = () => {
                 },
                 body: JSON.stringify(taskData),
             });
+
             const res = await taskResponse.json();
+
             if (taskResponse.ok) {
-                setTasks((prevTasks) => [...prevTasks, res]);
+                if (tasks.length < defLimit) {
+                    setTasks((prevTasks) => [...prevTasks, res]);
+                }
                 setTaskName('');
                 setTaskDescription('');
                 setFile(null); 
@@ -88,9 +92,20 @@ const TaskList = () => {
             });
 
             if (response.ok) {
-                const newTasks = [...tasks];
-                newTasks.splice(index, 1); 
-                setTasks(newTasks);
+                const status = selectFilterRef.current.value;
+                const response = await fetch(`http://localhost:1337/tasks/filter?status=${status}&limit=${defLimit}&startWith=${currentPage}`, {
+                    method: 'GET'
+                });
+
+                if (response.ok) {
+                    const newTasks = await response.json();
+                    if (newTasks.length > 0) {
+                        setCurrentPage(currentPage);
+                        setTasks(newTasks);
+                    }
+                } else {
+                    console.error('Get error', response.statusText);
+                }
             } else {
                 console.error('Delete error', response.statusText);
             }
@@ -127,7 +142,7 @@ const TaskList = () => {
     const handleFilter = async () => {
         try {
             const status = selectFilterRef.current.value;
-            const response = await fetch(`http://localhost:1337/tasks/filter?status=${status}`, {
+            const response = await fetch(`http://localhost:1337/tasks/filter?status=${status}&limit=${defLimit}&startWith=${currentPage}`, {
                 method: 'GET'
             });
 
@@ -145,7 +160,7 @@ const TaskList = () => {
     const handleNext = async () => {
         try {
             const status = selectFilterRef.current.value;
-            const response = await fetch(`http://localhost:1337/tasks?limit=${defLimit}&startWith=${currentPage + 1}`, {
+            const response = await fetch(`http://localhost:1337/tasks/filter?status=${status}&limit=${defLimit}&startWith=${currentPage + 1}`, {
                 method: 'GET'
             });
 
@@ -166,7 +181,7 @@ const TaskList = () => {
     const handlePrev = async () => {
         try {
             const status = selectFilterRef.current.value;
-            const response = await fetch(`http://localhost:1337/tasks?limit=${defLimit}&startWith=${currentPage - 1}`, {
+            const response = await fetch(`http://localhost:1337/tasks/filter?status=${status}&limit=${defLimit}&startWith=${currentPage - 1}`, {
                 method: 'GET'
             });
 

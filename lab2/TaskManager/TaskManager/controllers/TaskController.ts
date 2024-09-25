@@ -47,6 +47,8 @@ class TaskController {
 
     async filterTasks(req: express.Request, res: express.Response): Promise<void> {
         const status = req.query.status;
+        const limit = parseInt(req.query.limit as string, null);
+        const startWith = parseInt(req.query.startWith as string, null);
         let tasks: Task[] = [];
 
         try {
@@ -68,6 +70,14 @@ class TaskController {
             });
         }
 
+        if (!isNaN(limit) && !isNaN(startWith)) {
+            if (tasks.length < (startWith + 1) * limit) {
+                tasks = tasks.slice(startWith * limit);
+            } else {
+                tasks = tasks.slice(startWith * limit, (startWith + 1) * limit);
+            }
+        }
+
         res.status(200).json(tasks)
     };
 
@@ -76,20 +86,14 @@ class TaskController {
         const startWith = parseInt(req.query.startWith as string, null);
 
         try {
-            let tasks: Task[] = [];
+            let tasks = await taskRepository.getTasks();;
             if (!isNaN(limit) && !isNaN(startWith)) {
-                tasks = await taskRepository.getTasks();
-                let result: Task[];
                 if (tasks.length < (startWith + 1) * limit) {
-                    result = tasks.slice(startWith * limit);
+                    tasks = tasks.slice(startWith * limit);
                 } else {
-                    result = tasks.slice(startWith * limit, (startWith + 1) * limit);
+                    tasks = tasks.slice(startWith * limit, (startWith + 1) * limit);
                 }
-                
-                res.json(result);
-                return;
             }
-            tasks = await taskRepository.getTasks();
             res.status(200).json(tasks);
         } catch (error) {
             res.status(404).json({ error: 'Failed to retrieve tasks' });
