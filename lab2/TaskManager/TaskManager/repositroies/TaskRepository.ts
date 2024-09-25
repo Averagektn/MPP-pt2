@@ -46,6 +46,7 @@ class TaskRepository {
 
     async deleteTask(id: string, path: string | null): Promise<void> {
         await this.db.ref(`${this.tasksDbRef}/${id}`).remove();
+
         if (path) {
             const fileName = path.split('/').pop();
             await this.storageBucket.file(fileName).delete();
@@ -67,6 +68,7 @@ class TaskRepository {
         }
 
         const task = (await this.db.ref(`${this.tasksDbRef}/${id}`).get()).val();
+
         return { ...task, id };
     }
 

@@ -11,6 +11,7 @@ router.patch('/tasks/:id', TaskController_1.default.updateTask);
 router.delete('/tasks/:id', TaskController_1.default.deleteTask);
 router.get('/tasks/filter', TaskController_1.default.filterTasks);
 router.get('/tasks', TaskController_1.default.getTasks);
+router.get('/tasks/pages', TaskController_1.default.getTotalPages);
 router.get('/tasks/:id', TaskController_1.default.getTaskById);
 exports.default = router;
 //# sourceMappingURL=index.js.map

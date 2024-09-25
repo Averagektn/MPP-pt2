@@ -1,20 +1,23 @@
-import { useEffect, useRef, useState } from 'react'
+import { ChangeEvent, useEffect, useRef, useState } from 'react'
 import '../public/stylesheets/main.css'
 import React from 'react'
+import Task from '../model/Task'
 
-const TaskList = () => {
-    const [taskName, setTaskName] = useState('');
-    const [taskDescription, setTaskDescription] = useState('');
-    const [file, setFile] = useState(null);
-    const [tasks, setTasks] = useState([]); 
-    const statuses = ['Pending', 'Rejected', 'Accepted'];
-    const fileInputRef = useRef(null);
-    const selectFilterRef = useRef(null);
+const TaskList: React.FC = () => {
+    const [taskName, setTaskName] = useState<string>('');
+    const [taskDescription, setTaskDescription] = useState<string>('');
+    const [file, setFile] = useState<File | null>(null);
+    const [tasks, setTasks] = useState<Task[]>([]); 
     const [currentPage, setCurrentPage] = useState(0);
+
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const selectFilterRef = useRef<HTMLSelectElement | null>(null);
+
+    const statuses = ['Pending', 'Rejected', 'Accepted'];
     const defLimit = 8;
 
     useEffect(() => {
-        const fetchTasks = async () => {
+        const fetchTasks = async (): Promise<void> => {
             try {
                 const response = await fetch(`http://localhost:1337/tasks?limit=${defLimit}&startWith=0`);
                 if (!response.ok) {
@@ -30,14 +33,17 @@ const TaskList = () => {
         fetchTasks(); 
     }, []); 
 
-    const handleFileChange = (event) => {
-        setFile(event.target.files[0]);
+    const handleFileChange = (event: ChangeEvent<HTMLInputElement>): void => {
+        const selectedFile = event.target.files?.[0] || null;
+        setFile(selectedFile);
     };
 
-    const handleCreateTask = async (event) => {
+    const handleCreateTask = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
         event.preventDefault();
 
-        if (!file) return;
+        if (!file) {
+            return;
+        }
 
         const formData = new FormData();
         formData.append('file', file);
@@ -47,14 +53,8 @@ const TaskList = () => {
                 method: 'POST',
                 body: formData,
             });
-
             const { photo } = await response.json();
-
-            const taskData = {
-                name: taskName,
-                description: taskDescription,
-                photo: photo,
-            };
+            const taskData = new Task(taskName, taskDescription, null, null, null, photo);
 
             const taskResponse = await fetch('http://localhost:1337/tasks', {
                 method: 'POST',
@@ -63,7 +63,6 @@ const TaskList = () => {
                 },
                 body: JSON.stringify(taskData),
             });
-
             const res = await taskResponse.json();
 
             if (taskResponse.ok) {
@@ -76,7 +75,6 @@ const TaskList = () => {
                 if (fileInputRef.current) {
                     fileInputRef.current.value = '';
                 }
-                console.log('Task added');
             } else {
                 console.error('Task add error:', taskResponse.statusText);
             }
@@ -85,27 +83,15 @@ const TaskList = () => {
         }
     };
 
-    const handleDelete = async (taskId, index) => {
+    const handleDelete = async (taskId: string): Promise<void> => {
         try {
             const response = await fetch(`http://localhost:1337/tasks/${taskId}`, {
                 method: 'DELETE'
             });
 
             if (response.ok) {
-                const status = selectFilterRef.current.value;
-                const response = await fetch(`http://localhost:1337/tasks/filter?status=${status}&limit=${defLimit}&startWith=${currentPage}`, {
-                    method: 'GET'
-                });
-
-                if (response.ok) {
-                    const newTasks = await response.json();
-                    if (newTasks.length > 0) {
-                        setCurrentPage(currentPage);
-                        setTasks(newTasks);
-                    }
-                } else {
-                    console.error('Get error', response.statusText);
-                }
+                const status = selectFilterRef.current?.value;
+                await loadFilteredTasks(status!, currentPage, defLimit, true);
             } else {
                 console.error('Delete error', response.statusText);
             }
@@ -114,7 +100,7 @@ const TaskList = () => {
         }
     }
 
-    const handleUpdate = async (taskId, date, status) => {
+    const handleUpdate = async (taskId: string, date: string, status: string): Promise<void> => {
         try {
             const response = await fetch(`http://localhost:1337/tasks/${taskId}`, {
                 method: 'PATCH',
@@ -139,19 +125,59 @@ const TaskList = () => {
         }
     };
 
-    const handleNext = async () => {
+    const handleNext = async (): Promise<void> => {
         try {
-            const status = selectFilterRef.current.value;
-            const response = await fetch(`http://localhost:1337/tasks/filter?status=${status}&limit=${defLimit}&startWith=${currentPage + 1}`, {
+            const status = selectFilterRef.current?.value;
+            await loadFilteredTasks(status!, currentPage + 1, defLimit);
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    const loadFilteredTasks = async (status: string, currentPage: number, limit: number, loadEmptyArray = false): Promise<void> => {
+        const response = await fetch(`http://localhost:1337/tasks/filter?status=${status}&limit=${limit}&startWith=${currentPage}`, {
+             method: 'GET'
+         });
+
+         if (response.ok) {
+             const newTasks = await response.json();
+             if (newTasks.length > 0 || loadEmptyArray) {
+                 setCurrentPage(currentPage);
+                 setTasks(newTasks);
+             }
+         } else {
+             console.error('Get error', response.statusText);
+         }
+    }
+
+    const handleFirst = async (): Promise<void> => {
+        try {
+            const status = selectFilterRef.current?.value;
+            await loadFilteredTasks(status!, 0, defLimit);
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    const handlePrev = async (): Promise<void> => {
+        try {
+            const status = selectFilterRef.current?.value;
+            await loadFilteredTasks(status!, currentPage - 1, defLimit);
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    const handleLast = async (): Promise<void> => {
+        try {
+            const response = await fetch(`http://localhost:1337/tasks/pages?limit=${defLimit}`, {
                 method: 'GET'
             });
 
             if (response.ok) {
-                const newTasks = await response.json();
-                if (newTasks.length > 0) {
-                    setCurrentPage(currentPage + 1);
-                    setTasks(newTasks);
-                }
+                const status = selectFilterRef.current?.value;
+                const { pages } = await response.json();
+                await loadFilteredTasks(status!, pages - 1, defLimit)
             } else {
                 console.error('Get error', response.statusText);
             }
@@ -160,62 +186,44 @@ const TaskList = () => {
         }
     }
 
-    const handlePrev = async () => {
-        try {
-            const status = selectFilterRef.current.value;
-            const response = await fetch(`http://localhost:1337/tasks/filter?status=${status}&limit=${defLimit}&startWith=${currentPage - 1}`, {
-                method: 'GET'
-            });
+    const handleStatusChange = (taskId: string, event: React.ChangeEvent<HTMLSelectElement>) => {
+        const newTasks = [...tasks];
+        const selectedStatus = event.target.value;
 
-            if (response.ok) {
-                const newTasks = await response.json();
-                if (newTasks.length > 0) {
-                    setCurrentPage(currentPage - 1);
-                    setTasks(newTasks);
-                }
-            } else {
-                console.error('Get error', response.statusText);
+        const taskIndex = newTasks.findIndex(task => task.id === taskId);
+        if (taskIndex !== -1) {
+            newTasks[taskIndex] = {
+                ...newTasks[taskIndex],
+                status: selectedStatus,
+            };
+            setTasks(newTasks);
+        }
+    };
+
+    const handleDateChange = (taskId: string, event: React.ChangeEvent<HTMLInputElement>) => {
+        const newTasks = [...tasks];
+        const selectedDate = event.target.value;
+
+        const taskIndex = newTasks.findIndex(task => task.id === taskId);
+        if (taskIndex !== -1) {
+            newTasks[taskIndex] = {
+                ...newTasks[taskIndex],
+                date: selectedDate,
+            };
+            setTasks(newTasks);
+        }
+    };
+
+    const onChangeFilterStatus = async (): Promise<void> => {
+        try {
+            const status = selectFilterRef.current?.value; 
+            if (status) {
+                await loadFilteredTasks(status, currentPage, defLimit);
             }
         } catch (error) {
             console.error('Error:', error);
         }
-    }
-
-    const handleStatusChange = (taskId, event) => {
-        const newTasks = [...tasks];
-        newTasks[taskId] = {
-            ...newTasks[taskId],
-            status: event.target.value,
-        };
-        setTasks(newTasks);
     };
-
-    const handleDateChange = (taskId, event) => {
-        const newTasks = [...tasks];
-        newTasks[taskId] = {
-            ...newTasks[taskId],
-            date: event.target.value,
-        };
-        setTasks(newTasks);
-    };
-
-    const onChangeFilterStatus = async () => {
-        try {
-            const status = selectFilterRef.current.value;
-            const response = await fetch(`http://localhost:1337/tasks/filter?status=${status}&limit=${defLimit}&startWith=${currentPage}`, {
-                method: 'GET'
-            });
-
-            if (response.ok) {
-                const newTasks = await response.json();
-                setTasks(newTasks);
-            } else {
-                console.error('Update error', response.statusText);
-            }
-        } catch (error) {
-            console.error('Error:', error);
-        }
-    }
 
     return (
         <div className="container">
@@ -253,20 +261,21 @@ const TaskList = () => {
                 </div>
 
                 <div className="row">
+                    <strong>Filter by</strong>
                     <div className="box">
                         <select name="status" ref={selectFilterRef} onChange={onChangeFilterStatus}>
                             <option value="None">None</option>
-                            {statuses.map((status) => (
-                                <option key={status} value={status}>
-                                    {status}
-                                </option>
-                            ))}
+                                {statuses.map((status) => (
+                                    <option key={status} value={status}>
+                                        {status}
+                                    </option>
+                                ))}
                         </select>
                     </div>
                 </div>
 
                 <div className="row" style={{ textAlign: 'center' }}>
-                    {tasks.map((task, index) => (
+                    {tasks.map((task) => (
                         <div className="col" key={task.id}>
                             <strong>{task.name}</strong>
                             <br />
@@ -276,15 +285,13 @@ const TaskList = () => {
                             <input
                                 type="date"
                                 name="date"
-                                value={task.date || ''} 
-                                onChange={(event) => handleDateChange(index, event)}
-                            />
+                                value={task.date ?? ''} 
+                                onChange={(event) => handleDateChange(task.id!, event)}/>
                             <div className="box">
                                 <select
                                     name="status"
-                                    value={task.status} 
-                                    onChange={(event) => handleStatusChange(index, event)}
-                                >
+                                    value={task.status ?? ''}
+                                    onChange={(event) => handleStatusChange(task.id!, event)}>
                                     {statuses.map((status) => (
                                         <option key={status} value={status}>
                                             {status}
@@ -296,42 +303,41 @@ const TaskList = () => {
                                 type="button"
                                 className="btn"
                                 onClick={() => {
-                                    handleUpdate(task.id, task.date, task.status);
-                                }}
-                            >
+                                    handleUpdate(task.id!, task.date!, task.status!);
+                                }}>
                                 Update
                             </button>
 
-                            <img src={task.photo} alt="Task Photo" />
+                            <img src={task.photo ?? 'ERROR'} alt="Task Photo" />
 
                             <button
                                 type="submit"
                                 className="btn"
                                 onClick={() => {
-                                    handleDelete(task.id, index);
-                                }}
-                            >
+                                    handleDelete(task.id!);
+                                }}>
                                 Delete
                             </button>
                         </div>
                     ))}
                 </div>
-                <button
-                    type="submit"
-                    className="btn"
-                    id="prevButton"
-                    onClick={handlePrev}
-                >
-                    Prev
-                </button>
-                <button
-                    type="submit"
-                    className="btn"
-                    id="nextButton"
-                    onClick={handleNext}
-                >
-                    Next
-                </button>
+                <div className="row" style={{ textAlign: 'center' }}>
+                    <button type="submit" className="btn" id="prevButton" onClick={handleFirst}>
+                        First
+                    </button>
+
+                    <button type="submit" className="btn" id="prevButton" onClick={handlePrev}>
+                        Prev
+                    </button>
+
+                    <button type="submit" className="btn" id="nextButton" onClick={handleNext}>
+                        Next
+                    </button>
+
+                    <button type="submit" className="btn" id="prevButton" onClick={handleLast}>
+                        Last
+                    </button>
+                </div>
             </section>
         </div>
     );

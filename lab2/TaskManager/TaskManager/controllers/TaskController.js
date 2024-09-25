@@ -11,6 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const Task_1 = require("../model/Task");
 const TaskRepository_1 = require("../repositroies/TaskRepository");
+const number_verifier_1 = require("../utils/number_verifier");
 class TaskController {
     createTask(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -56,12 +57,33 @@ class TaskController {
             }
         });
     }
+    getTotalPages(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const limit = parseInt(req.query.limit, null);
+            if (!(0, number_verifier_1.default)(limit)) {
+                res.status(404).json({ error: 'Failed to retrieve tasks' });
+                return;
+            }
+            try {
+                const tasks = yield TaskRepository_1.default.getTasks();
+                const pages = Math.ceil(tasks.length / limit);
+                res.status(200).send({ pages });
+            }
+            catch (err) {
+                res.status(404).json({ error: 'Failed to retrieve tasks' });
+            }
+        });
+    }
     filterTasks(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const status = req.query.status;
             const limit = parseInt(req.query.limit, null);
             const startWith = parseInt(req.query.startWith, null);
             let tasks = [];
+            if (!(0, number_verifier_1.default)(limit) || !(0, number_verifier_1.default)(startWith)) {
+                res.status(404).json({ error: 'Failed to retrieve tasks' });
+                return;
+            }
             try {
                 tasks = yield TaskRepository_1.default.getTasks();
             }
@@ -80,32 +102,31 @@ class TaskController {
                     return 0;
                 });
             }
-            if (!isNaN(limit) && !isNaN(startWith)) {
+            if (tasks.length < (startWith + 1) * limit) {
+                tasks = tasks.slice(startWith * limit);
+            }
+            else {
+                tasks = tasks.slice(startWith * limit, (startWith + 1) * limit);
+            }
+            res.status(200).json(tasks);
+        });
+    }
+    getTasks(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const limit = parseInt(req.query.limit, null);
+            const startWith = parseInt(req.query.startWith, null);
+            if (!(0, number_verifier_1.default)(limit) || !(0, number_verifier_1.default)(startWith)) {
+                res.status(404).json({ error: 'Failed to retrieve tasks' });
+                return;
+            }
+            try {
+                let tasks = yield TaskRepository_1.default.getTasks();
+                ;
                 if (tasks.length < (startWith + 1) * limit) {
                     tasks = tasks.slice(startWith * limit);
                 }
                 else {
                     tasks = tasks.slice(startWith * limit, (startWith + 1) * limit);
-                }
-            }
-            res.status(200).json(tasks);
-        });
-    }
-    ;
-    getTasks(req, res) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const limit = parseInt(req.query.limit, null);
-            const startWith = parseInt(req.query.startWith, null);
-            try {
-                let tasks = yield TaskRepository_1.default.getTasks();
-                ;
-                if (!isNaN(limit) && !isNaN(startWith)) {
-                    if (tasks.length < (startWith + 1) * limit) {
-                        tasks = tasks.slice(startWith * limit);
-                    }
-                    else {
-                        tasks = tasks.slice(startWith * limit, (startWith + 1) * limit);
-                    }
                 }
                 res.status(200).json(tasks);
             }
@@ -126,7 +147,6 @@ class TaskController {
             }
         });
     }
-    ;
 }
 exports.default = new TaskController();
 //# sourceMappingURL=TaskController.js.map

@@ -1,6 +1,7 @@
 import express = require('express');
 import Task from '../model/Task';
 import taskRepository from '../repositroies/TaskRepository';
+import isValidNumber from '../utils/number_verifier';
 
 class TaskController {
     async createTask(req: express.Request, res: express.Response): Promise<void> {
@@ -45,11 +46,34 @@ class TaskController {
         }
     }
 
+    async getTotalPages(req: express.Request, res: express.Response): Promise<void> {
+        const limit = parseInt(req.query.limit as string, null);
+
+        if (!isValidNumber(limit)) {
+            res.status(404).json({ error: 'Failed to retrieve tasks' });
+            return;
+        }
+
+        try {
+            const tasks = await taskRepository.getTasks();
+            const pages = Math.ceil(tasks.length / limit);
+
+            res.status(200).send({ pages });
+        } catch (err) {
+            res.status(404).json({ error: 'Failed to retrieve tasks' });
+        }
+    }
+
     async filterTasks(req: express.Request, res: express.Response): Promise<void> {
         const status = req.query.status;
         const limit = parseInt(req.query.limit as string, null);
         const startWith = parseInt(req.query.startWith as string, null);
         let tasks: Task[] = [];
+
+        if (!isValidNumber(limit) || !isValidNumber(startWith)) {
+            res.status(404).json({ error: 'Failed to retrieve tasks' });
+            return;
+        }
 
         try {
             tasks = await taskRepository.getTasks();
@@ -70,29 +94,30 @@ class TaskController {
             });
         }
 
-        if (!isNaN(limit) && !isNaN(startWith)) {
-            if (tasks.length < (startWith + 1) * limit) {
-                tasks = tasks.slice(startWith * limit);
-            } else {
-                tasks = tasks.slice(startWith * limit, (startWith + 1) * limit);
-            }
+        if (tasks.length < (startWith + 1) * limit) {
+            tasks = tasks.slice(startWith * limit);
+        } else {
+            tasks = tasks.slice(startWith * limit, (startWith + 1) * limit);
         }
 
         res.status(200).json(tasks)
-    };
+    }
 
     async getTasks(req: express.Request, res: express.Response): Promise<void> {
         const limit = parseInt(req.query.limit as string, null);
         const startWith = parseInt(req.query.startWith as string, null);
 
+        if (!isValidNumber(limit) || !isValidNumber(startWith)) {
+            res.status(404).json({ error: 'Failed to retrieve tasks' });
+            return;
+        }
+
         try {
             let tasks = await taskRepository.getTasks();;
-            if (!isNaN(limit) && !isNaN(startWith)) {
-                if (tasks.length < (startWith + 1) * limit) {
-                    tasks = tasks.slice(startWith * limit);
-                } else {
-                    tasks = tasks.slice(startWith * limit, (startWith + 1) * limit);
-                }
+            if (tasks.length < (startWith + 1) * limit) {
+                tasks = tasks.slice(startWith * limit);
+            } else {
+                tasks = tasks.slice(startWith * limit, (startWith + 1) * limit);
             }
             res.status(200).json(tasks);
         } catch (error) {
@@ -109,7 +134,7 @@ class TaskController {
         } catch (error) {
             res.status(404).json({ error: 'Failed to retrieve task' });
         }
-    };
+    }
 }
 
 export default new TaskController();
