@@ -78,6 +78,24 @@ const TaskList = () => {
         }
     };
 
+    const handleDelete = async (taskId, index) => {
+        try {
+            const response = await fetch(`http://localhost:1337/tasks/${taskId}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                const newTasks = [...tasks];
+                newTasks.splice(index, 1); 
+                setTasks(newTasks);
+            } else {
+                console.error('Delete error', response.statusText);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
     const handleUpdate = async (taskId, date, status) => {
         try {
             const response = await fetch(`http://localhost:1337/tasks/${taskId}`, {
@@ -209,7 +227,15 @@ const TaskList = () => {
 
                             <img src={task.photo} alt="Task Photo" />
 
-                            <button type="submit" className="btn">Delete</button>
+                            <button
+                                type="submit"
+                                className="btn"
+                                onClick={() => {
+                                    handleDelete(task.id, index);
+                                }}
+                            >
+                                Delete
+                            </button>
                         </div>
                     ))}
                 </div>
