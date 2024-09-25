@@ -95,27 +95,30 @@ const TaskList = () => {
                         task.id === taskId ? updatedTask : task
                     )
                 );
-                console.log('Задача успешно обновлена!');
             } else {
-                console.error('Ошибка при обновлении задачи:', response.statusText);
+                console.error('Update error', response.statusText);
             }
         } catch (error) {
-            console.error('Ошибка:', error);
+            console.error('Error:', error);
         }
     };
 
     const handleStatusChange = (taskId, event) => {
-        const updatedTasks = tasks.map((task) =>
-            task.id === taskId ? { ...task, status: event.target.value } : task
-        );
-        setTasks(updatedTasks);
+        const newTasks = [...tasks];
+        newTasks[taskId] = {
+            ...newTasks[taskId],
+            status: event.target.value,
+        };
+        setTasks(newTasks);
     };
 
     const handleDateChange = (taskId, event) => {
-        const updatedTasks = tasks.map((task) =>
-            task.id === taskId ? { ...task, date: event.target.value } : task
-        );
-        setTasks(updatedTasks);
+        const newTasks = [...tasks];
+        newTasks[taskId] = {
+            ...newTasks[taskId],
+            date: event.target.value,
+        };
+        setTasks(newTasks);
     };
 
     return (
@@ -168,7 +171,7 @@ const TaskList = () => {
                 </div>
 
                 <div className="row" style={{ textAlign: 'center' }}>
-                    {tasks.map((task) => (
+                    {tasks.map((task, index) => (
                         <div className="col" key={task.id}>
                             <strong>{task.name}</strong>
                             <br />
@@ -179,13 +182,13 @@ const TaskList = () => {
                                 type="date"
                                 name="date"
                                 value={task.date || ''} 
-                                onChange={(event) => handleDateChange(task.id, event)}
+                                onChange={(event) => handleDateChange(index, event)}
                             />
                             <div className="box">
                                 <select
                                     name="status"
                                     value={task.status} 
-                                    onChange={(event) => handleStatusChange(task.id, event)}
+                                    onChange={(event) => handleStatusChange(index, event)}
                                 >
                                     {statuses.map((status) => (
                                         <option key={status} value={status}>

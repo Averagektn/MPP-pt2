@@ -15,10 +15,10 @@ const debug = require('debug')('my express app');
 const app = express();
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(cors({
-    origin: 'http://localhost:5173',
-    methods: ['GET', 'POST', 'PATHCH', 'DELETE', 'PUT', 'OPTIONS'],
+    origin: '*',
+    methods: '*',
     credentials: true,
-    allowedHeaders: ['Content-Type']
+    allowedHeaders: '*'
 }));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
