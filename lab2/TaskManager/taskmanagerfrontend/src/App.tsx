@@ -139,24 +139,6 @@ const TaskList = () => {
         }
     };
 
-    const handleFilter = async () => {
-        try {
-            const status = selectFilterRef.current.value;
-            const response = await fetch(`http://localhost:1337/tasks/filter?status=${status}&limit=${defLimit}&startWith=${currentPage}`, {
-                method: 'GET'
-            });
-
-            if (response.ok) {
-                const newTasks = await response.json();
-                setTasks(newTasks);
-            } else {
-                console.error('Update error', response.statusText);
-            }
-        } catch (error) {
-            console.error('Error:', error);
-        }
-    };
-
     const handleNext = async () => {
         try {
             const status = selectFilterRef.current.value;
@@ -217,6 +199,24 @@ const TaskList = () => {
         setTasks(newTasks);
     };
 
+    const onChangeFilterStatus = async () => {
+        try {
+            const status = selectFilterRef.current.value;
+            const response = await fetch(`http://localhost:1337/tasks/filter?status=${status}&limit=${defLimit}&startWith=${currentPage}`, {
+                method: 'GET'
+            });
+
+            if (response.ok) {
+                const newTasks = await response.json();
+                setTasks(newTasks);
+            } else {
+                console.error('Update error', response.statusText);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
     return (
         <div className="container">
             <h1>Task List</h1>
@@ -254,7 +254,7 @@ const TaskList = () => {
 
                 <div className="row">
                     <div className="box">
-                        <select name="status" ref={selectFilterRef}>
+                        <select name="status" ref={selectFilterRef} onChange={onChangeFilterStatus}>
                             <option value="None">None</option>
                             {statuses.map((status) => (
                                 <option key={status} value={status}>
@@ -262,13 +262,6 @@ const TaskList = () => {
                                 </option>
                             ))}
                         </select>
-                        <button
-                            type="submit"
-                            className="btn"
-                            onClick={handleFilter}
-                        >
-                            Filter
-                        </button>
                     </div>
                 </div>
 
