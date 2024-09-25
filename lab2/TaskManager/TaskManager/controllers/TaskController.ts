@@ -73,13 +73,20 @@ class TaskController {
 
     async getTasks(req: express.Request, res: express.Response): Promise<void> {
         const limit = parseInt(req.query.limit as string, null);
-        const startWithId = req.query.startWithId as string;
+        const startWith = parseInt(req.query.startWith as string, null);
 
         try {
             let tasks: Task[] = [];
-            if (limit) {
-                tasks = await taskRepository.getPageTasks(limit, startWithId);
-                res.json(tasks);
+            if (!isNaN(limit) && !isNaN(startWith)) {
+                tasks = await taskRepository.getTasks();
+                let result: Task[];
+                if (tasks.length < (startWith + 1) * limit) {
+                    result = tasks.slice(startWith * limit);
+                } else {
+                    result = tasks.slice(startWith * limit, (startWith + 1) * limit);
+                }
+                
+                res.json(result);
                 return;
             }
             tasks = await taskRepository.getTasks();

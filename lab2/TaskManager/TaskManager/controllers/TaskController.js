@@ -85,12 +85,19 @@ class TaskController {
     getTasks(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const limit = parseInt(req.query.limit, null);
-            const startWithId = req.query.startWithId;
+            const startWith = parseInt(req.query.startWith, null);
             try {
                 let tasks = [];
-                if (limit) {
-                    tasks = yield TaskRepository_1.default.getPageTasks(limit, startWithId);
-                    res.json(tasks);
+                if (!isNaN(limit) && !isNaN(startWith)) {
+                    tasks = yield TaskRepository_1.default.getTasks();
+                    let result;
+                    if (tasks.length < (startWith + 1) * limit) {
+                        result = tasks.slice(startWith * limit);
+                    }
+                    else {
+                        result = tasks.slice(startWith * limit, (startWith + 1) * limit);
+                    }
+                    res.json(result);
                     return;
                 }
                 tasks = yield TaskRepository_1.default.getTasks();

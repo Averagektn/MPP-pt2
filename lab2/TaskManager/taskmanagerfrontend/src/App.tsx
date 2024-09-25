@@ -10,11 +10,13 @@ const TaskList = () => {
     const statuses = ['Pending', 'Rejected', 'Accepted'];
     const fileInputRef = useRef(null);
     const selectFilterRef = useRef(null);
+    const [currentPage, setCurrentPage] = useState(0);
+    const defLimit = 8;
 
     useEffect(() => {
         const fetchTasks = async () => {
             try {
-                const response = await fetch('http://localhost:1337/tasks');
+                const response = await fetch(`http://localhost:1337/tasks?limit=${defLimit}&startWith=0`);
                 if (!response.ok) {
                     throw new Error('Tasks loading error');
                 }
@@ -140,6 +142,48 @@ const TaskList = () => {
         }
     };
 
+    const handleNext = async () => {
+        try {
+            const status = selectFilterRef.current.value;
+            const response = await fetch(`http://localhost:1337/tasks?limit=${defLimit}&startWith=${currentPage + 1}`, {
+                method: 'GET'
+            });
+
+            if (response.ok) {
+                const newTasks = await response.json();
+                if (newTasks.length > 0) {
+                    setCurrentPage(currentPage + 1);
+                    setTasks(newTasks);
+                }
+            } else {
+                console.error('Get error', response.statusText);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
+    const handlePrev = async () => {
+        try {
+            const status = selectFilterRef.current.value;
+            const response = await fetch(`http://localhost:1337/tasks?limit=${defLimit}&startWith=${currentPage - 1}`, {
+                method: 'GET'
+            });
+
+            if (response.ok) {
+                const newTasks = await response.json();
+                if (newTasks.length > 0) {
+                    setCurrentPage(currentPage - 1);
+                    setTasks(newTasks);
+                }
+            } else {
+                console.error('Get error', response.statusText);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    }
+
     const handleStatusChange = (taskId, event) => {
         const newTasks = [...tasks];
         newTasks[taskId] = {
@@ -264,6 +308,22 @@ const TaskList = () => {
                         </div>
                     ))}
                 </div>
+                <button
+                    type="submit"
+                    className="btn"
+                    id="prevButton"
+                    onClick={handlePrev}
+                >
+                    Prev
+                </button>
+                <button
+                    type="submit"
+                    className="btn"
+                    id="nextButton"
+                    onClick={handleNext}
+                >
+                    Next
+                </button>
             </section>
         </div>
     );
