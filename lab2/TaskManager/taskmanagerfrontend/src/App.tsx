@@ -9,6 +9,7 @@ const TaskList = () => {
     const [tasks, setTasks] = useState([]); 
     const statuses = ['Pending', 'Rejected', 'Accepted'];
     const fileInputRef = useRef(null);
+    const selectFilterRef = useRef(null);
 
     useEffect(() => {
         const fetchTasks = async () => {
@@ -121,6 +122,24 @@ const TaskList = () => {
         }
     };
 
+    const handleFilter = async () => {
+        try {
+            const status = selectFilterRef.current.value;
+            const response = await fetch(`http://localhost:1337/tasks/filter?status=${status}`, {
+                method: 'GET'
+            });
+
+            if (response.ok) {
+                const newTasks = await response.json();
+                setTasks(newTasks);
+            } else {
+                console.error('Update error', response.statusText);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    };
+
     const handleStatusChange = (taskId, event) => {
         const newTasks = [...tasks];
         newTasks[taskId] = {
@@ -175,17 +194,23 @@ const TaskList = () => {
                 </div>
 
                 <div className="row">
-                    <form>
-                        <div className="box">
-                            <select name="status">
-                                <option value="None">None</option>
-                                {statuses.map((status) => (
-                                    <option value={status}>{status}</option>
-                                ))}
-                            </select>
-                            <button type="submit" className="btn">Filter</button>
-                        </div>
-                    </form>
+                    <div className="box">
+                        <select name="status" ref={selectFilterRef}>
+                            <option value="None">None</option>
+                            {statuses.map((status) => (
+                                <option key={status} value={status}>
+                                    {status}
+                                </option>
+                            ))}
+                        </select>
+                        <button
+                            type="submit"
+                            className="btn"
+                            onClick={handleFilter}
+                        >
+                            Filter
+                        </button>
+                    </div>
                 </div>
 
                 <div className="row" style={{ textAlign: 'center' }}>
