@@ -17,7 +17,7 @@ class TaskController {
 
         try {
             const filePath = await taskRepository.uploadFile(file);
-            res.status(201).json(filePath);
+            res.status(201).json({ photo: filePath });
         } catch (error) {
             console.error('Error uploading file:', error);
             res.status(404).send('Error uploading file.');

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import '../public/stylesheets/main.css'
 import React from 'react'
 
@@ -8,6 +8,7 @@ const TaskList = () => {
     const [file, setFile] = useState(null);
     const [tasks, setTasks] = useState([]); 
     const statuses = ['Pending', 'Rejected', 'Accepted'];
+    const fileInputRef = useRef(null);
 
     useEffect(() => {
         const fetchTasks = async () => {
@@ -59,12 +60,15 @@ const TaskList = () => {
                 },
                 body: JSON.stringify(taskData),
             });
-
+            const res = await taskResponse.json();
             if (taskResponse.ok) {
-                setTasks((prevTasks) => [...prevTasks, taskData]);
+                setTasks((prevTasks) => [...prevTasks, res]);
                 setTaskName('');
                 setTaskDescription('');
-                setFile(null);
+                setFile(null); 
+                if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                }
                 console.log('Task added');
             } else {
                 console.error('Task add error:', taskResponse.statusText);
@@ -142,6 +146,7 @@ const TaskList = () => {
                             name="file"
                             accept="image/*"
                             onChange={handleFileChange}
+                            ref={fileInputRef}
                             required
                         />
                         <button type="submit" className="btn">Add Task</button>
@@ -165,21 +170,21 @@ const TaskList = () => {
                 <div className="row" style={{ textAlign: 'center' }}>
                     {tasks.map((task) => (
                         <div className="col" key={task.id}>
-                            <strong>{task.TaskName}</strong>
+                            <strong>{task.name}</strong>
                             <br />
-                            {task.TaskDescription}
+                            {task.description}
                             <br />
 
                             <input
                                 type="date"
                                 name="date"
-                                value={task.date || ''} // Используем значение из состояния
+                                value={task.date || ''} 
                                 onChange={(event) => handleDateChange(task.id, event)}
                             />
                             <div className="box">
                                 <select
                                     name="status"
-                                    value={task.status || 'None'} // Используем значение из состояния
+                                    value={task.status} 
                                     onChange={(event) => handleStatusChange(task.id, event)}
                                 >
                                     {statuses.map((status) => (

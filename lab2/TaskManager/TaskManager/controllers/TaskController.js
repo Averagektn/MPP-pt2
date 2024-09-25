@@ -26,7 +26,7 @@ class TaskController {
             const file = req.file;
             try {
                 const filePath = yield TaskRepository_1.default.uploadFile(file);
-                res.status(201).json(filePath);
+                res.status(201).json({ photo: filePath });
             }
             catch (error) {
                 console.error('Error uploading file:', error);
