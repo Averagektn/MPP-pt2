@@ -1,0 +1,35 @@
+import express = require('express');
+import authRepository from '../repositroies/AuthRepository';
+
+class AuthController {
+    async performAuth(req: express.Request, res: express.Response): Promise<void> {
+        const { email, password } = req.body;
+
+        try {
+            const token = await authRepository.authorizeUser(email, password);
+
+            res.status(200)
+                .cookie('token', token, {
+                    httpOnly: true,
+                    secure: true,
+                    sameSite: 'strict',
+                    maxAge: 5 * 60 * 1000
+                }).send(); 
+        } catch {
+            res.status(401).send();
+        }
+    }
+
+    async createUser(req: express.Request, res: express.Response): Promise<void> {
+        const { email, password } = req.body;
+
+        try {
+            await authRepository.createUser(email, password);
+            res.status(201).send();
+        } catch {
+            res.status(401).send();
+        }
+    }
+}
+
+export default new AuthController()

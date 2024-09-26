@@ -1,6 +1,7 @@
 import express = require('express');
 import multer = require('multer');
 import taskController from '../controllers/TaskController';
+import authController from '../controllers/AuthController';
 
 const router = express.Router();
 const upload = multer(); 
@@ -13,5 +14,8 @@ router.get('/tasks/filter', taskController.filterTasks);
 router.get('/tasks', taskController.getTasks);
 router.get('/tasks/pages', taskController.getTotalPages);
 router.get('/tasks/:id', taskController.getTaskById);
+
+router.post('/auth', authController.performAuth);
+router.post('/auth/users', authController.createUser);
 
 export default router;

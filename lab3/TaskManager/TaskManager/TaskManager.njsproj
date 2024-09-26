@@ -41,15 +41,28 @@
     <Folder Include="config\" />
     <Folder Include="model\" />
     <Folder Include="controllers\" />
+    <Folder Include="middleware\" />
     <Folder Include="utils\" />
     <Folder Include="repositroies\" />
     <Folder Include="routes\" />
   </ItemGroup>
   <ItemGroup>
+    <TypeScriptCompile Include="config\jwt_secret_key.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include="controllers\AuthController.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
     <TypeScriptCompile Include="controllers\TaskController.ts">
       <SubType>Code</SubType>
     </TypeScriptCompile>
+    <TypeScriptCompile Include="middleware\AuthMiddleware.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
     <TypeScriptCompile Include="model\Task.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include="repositroies\AuthRepository.ts">
       <SubType>Code</SubType>
     </TypeScriptCompile>
     <TypeScriptCompile Include="repositroies\TaskRepository.ts">

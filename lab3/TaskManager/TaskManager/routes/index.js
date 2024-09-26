@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express = require("express");
 const multer = require("multer");
 const TaskController_1 = require("../controllers/TaskController");
+const AuthController_1 = require("../controllers/AuthController");
 const router = express.Router();
 const upload = multer();
 router.post('/tasks', TaskController_1.default.createTask);
@@ -13,5 +14,7 @@ router.get('/tasks/filter', TaskController_1.default.filterTasks);
 router.get('/tasks', TaskController_1.default.getTasks);
 router.get('/tasks/pages', TaskController_1.default.getTotalPages);
 router.get('/tasks/:id', TaskController_1.default.getTaskById);
+router.post('/auth', AuthController_1.default.performAuth);
+router.post('/auth/users', AuthController_1.default.createUser);
 exports.default = router;
 //# sourceMappingURL=index.js.map

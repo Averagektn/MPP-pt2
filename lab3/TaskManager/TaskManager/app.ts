@@ -1,13 +1,15 @@
 import * as express from 'express';
 import { AddressInfo } from "net";
 import * as path from 'path';
+import authorize from './middleware/AuthMiddleware';
 
 import * as admin from 'firebase-admin';
 
+const cookieParser = require('cookie-parser');
 const cors = require('cors')
 
 const serviceAccount = require("./config/taskmanager-dedf9-firebase-adminsdk-uia8o-f0091c57e0.json");
-admin.initializeApp({
+const authApp = admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
     databaseURL: "https://taskmanager-dedf9-default-rtdb.europe-west1.firebasedatabase.app",
     storageBucket: "taskmanager-dedf9.appspot.com"
@@ -18,7 +20,6 @@ import routes from './routes/index';
 const debug = require('debug')('my express app');
 const app = express();
 
-
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(cors({
     origin: '*', 
@@ -27,7 +28,9 @@ app.use(cors({
     allowedHeaders: '*'
 }));
 app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
 app.use(express.json());
+app.use(authorize);
 
 app.use('/', routes);
 
