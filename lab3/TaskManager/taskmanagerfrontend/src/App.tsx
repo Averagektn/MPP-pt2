@@ -11,6 +11,7 @@ const TaskList: React.FC = () => {
     const [tasks, setTasks] = useState<Task[]>([]); 
     const [currentPage, setCurrentPage] = useState(0);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+    const [isAuthorized, setIsAuthorized] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const selectFilterRef = useRef<HTMLSelectElement | null>(null);
@@ -21,23 +22,34 @@ const TaskList: React.FC = () => {
     useEffect(() => {
         const fetchTasks = async (): Promise<void> => {
             try {
-                const response = await fetch(`http://localhost:1337/tasks?limit=${defLimit}&startWith=0`, {
-                    method: "GET",
-                    credentials: 'include'
-                });
-                if (response.status === 401) {
-                    setIsAuthModalOpen(true); 
-                    throw new Error();
-                }
-                const data = await response.json();
-                setTasks(data); 
+                const status = selectFilterRef.current?.value;
+                await loadFilteredTasks(status!, currentPage, defLimit, true);
             } catch (error) {
                 console.error('Error:', error);
             }
         };
 
-        fetchTasks(); 
-    }, []); 
+        fetchTasks();
+    }, [isAuthorized, currentPage]);
+
+    const loadFilteredTasks = async (status: string, currentPage: number, limit: number, loadEmptyArray = false): Promise<void> => {
+        const response = await fetch(`http://localhost:1337/tasks/filter?status=${status}&limit=${limit}&startWith=${currentPage}`, {
+            method: 'GET',
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            const newTasks = await response.json();
+            if (newTasks.length > 0 || loadEmptyArray) {
+                setCurrentPage(currentPage);
+                setTasks(newTasks);
+            }
+        } else if (response.status === 401) {
+            setIsAuthModalOpen(true);
+        } else {
+            console.error('Get error', response.statusText);
+        }
+    }
 
     const handleFileChange = (event: ChangeEvent<HTMLInputElement>): void => {
         const selectedFile = event.target.files?.[0] || null;
@@ -58,6 +70,7 @@ const TaskList: React.FC = () => {
             const response = await fetch('http://localhost:1337/tasks/photo', {
                 method: 'POST',
                 body: formData,
+                credentials: 'include'
             });
             const { photo } = await response.json();
             const taskData = new Task(taskName, taskDescription, null, null, null, photo);
@@ -68,19 +81,23 @@ const TaskList: React.FC = () => {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(taskData),
+                credentials: 'include'
             });
             const res = await taskResponse.json();
+
+            setTaskName('');
+            setTaskDescription('');
+            setFile(null); 
 
             if (taskResponse.ok) {
                 if (tasks.length < defLimit) {
                     setTasks((prevTasks) => [...prevTasks, res]);
                 }
-                setTaskName('');
-                setTaskDescription('');
-                setFile(null); 
                 if (fileInputRef.current) {
                     fileInputRef.current.value = '';
                 }
+            } else if (response.status === 401) {
+                setIsAuthModalOpen(true);
             } else {
                 console.error('Task add error:', taskResponse.statusText);
             }
@@ -92,12 +109,15 @@ const TaskList: React.FC = () => {
     const handleDelete = async (taskId: string): Promise<void> => {
         try {
             const response = await fetch(`http://localhost:1337/tasks/${taskId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                credentials: 'include'
             });
 
             if (response.ok) {
                 const status = selectFilterRef.current?.value;
                 await loadFilteredTasks(status!, currentPage, defLimit, true);
+            } else if (response.status === 401) {
+                setIsAuthModalOpen(true);
             } else {
                 console.error('Delete error', response.statusText);
             }
@@ -114,6 +134,7 @@ const TaskList: React.FC = () => {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ date, status }), 
+                credentials: 'include'
             });
 
             if (response.ok) {
@@ -123,6 +144,9 @@ const TaskList: React.FC = () => {
                         task.id === taskId ? updatedTask : task
                     )
                 );
+                alert('Updated');
+            } else if (response.status === 401) {
+                setIsAuthModalOpen(true);
             } else {
                 console.error('Update error', response.statusText);
             }
@@ -131,59 +155,16 @@ const TaskList: React.FC = () => {
         }
     };
 
-    const handleNext = async (): Promise<void> => {
-        try {
-            const status = selectFilterRef.current?.value;
-            await loadFilteredTasks(status!, currentPage + 1, defLimit);
-        } catch (error) {
-            console.error('Error:', error);
-        }
-    }
-
-    const loadFilteredTasks = async (status: string, currentPage: number, limit: number, loadEmptyArray = false): Promise<void> => {
-        const response = await fetch(`http://localhost:1337/tasks/filter?status=${status}&limit=${limit}&startWith=${currentPage}`, {
-             method: 'GET'
-         });
-
-         if (response.ok) {
-             const newTasks = await response.json();
-             if (newTasks.length > 0 || loadEmptyArray) {
-                 setCurrentPage(currentPage);
-                 setTasks(newTasks);
-             }
-         } else {
-             console.error('Get error', response.statusText);
-         }
-    }
-
-    const handleFirst = async (): Promise<void> => {
-        try {
-            const status = selectFilterRef.current?.value;
-            await loadFilteredTasks(status!, 0, defLimit);
-        } catch (error) {
-            console.error('Error:', error);
-        }
-    }
-
-    const handlePrev = async (): Promise<void> => {
-        try {
-            const status = selectFilterRef.current?.value;
-            await loadFilteredTasks(status!, currentPage - 1, defLimit);
-        } catch (error) {
-            console.error('Error:', error);
-        }
-    }
-
     const handleLast = async (): Promise<void> => {
         try {
             const response = await fetch(`http://localhost:1337/tasks/pages?limit=${defLimit}`, {
-                method: 'GET'
+                method: 'GET',
+                credentials: 'include'
             });
 
             if (response.ok) {
-                const status = selectFilterRef.current?.value;
                 const { pages } = await response.json();
-                await loadFilteredTasks(status!, pages - 1, defLimit)
+                setCurrentPage(pages - 1);
             } else {
                 console.error('Get error', response.statusText);
             }
@@ -235,7 +216,12 @@ const TaskList: React.FC = () => {
         <div className="container">
             <h1>Task List</h1>
             <hr />
-            <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
+            <AuthModal
+                isOpen={isAuthModalOpen}
+                onClose={() => {
+                    setIsAuthModalOpen(false);
+                    setIsAuthorized(true);
+                }} />
             <section>
                 <div className="row">
                     <form onSubmit={handleCreateTask}>
@@ -315,7 +301,7 @@ const TaskList: React.FC = () => {
                                 Update
                             </button>
 
-                            <img src={task.photo ?? 'ERROR'} alt="Task Photo" />
+                            <img src={task.photo ?? 'ERROR'} alt="Task Photo" width="200" />
 
                             <button
                                 type="submit"
@@ -329,15 +315,15 @@ const TaskList: React.FC = () => {
                     ))}
                 </div>
                 <div className="row" style={{ textAlign: 'center' }}>
-                    <button type="submit" className="btn" id="prevButton" onClick={handleFirst}>
+                    <button type="submit" className="btn" id="prevButton" onClick={() => setCurrentPage(0)}>
                         First
                     </button>
 
-                    <button type="submit" className="btn" id="prevButton" onClick={handlePrev}>
+                    <button type="submit" className="btn" id="prevButton" onClick={() => setCurrentPage(currentPage - 1)}>
                         Prev
                     </button>
 
-                    <button type="submit" className="btn" id="nextButton" onClick={handleNext}>
+                    <button type="submit" className="btn" id="nextButton" onClick={() => setCurrentPage(currentPage + 1)}>
                         Next
                     </button>
 

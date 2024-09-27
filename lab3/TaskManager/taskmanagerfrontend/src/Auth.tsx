@@ -28,11 +28,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             console.log('Login successful:', response.json());
             onClose();
         } catch (err) {
-            if (err.response && err.response.status === 401) {
-                setError('Неверная почта или пароль');
-            } else {
-                setError('Ошибка сервера. Пожалуйста, попробуйте позже.');
-            }
+            setError(`Auth error ${err}`);
         }
     };
 
@@ -46,25 +42,25 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 <h2>Auth</h2>
                 <form onSubmit={handleSubmit}>
                     <div>
-                        <label htmlFor="email">Email:</label>
+                        <label htmlFor="email">Email:</label><br />
                         <input
                             type="email"
                             id="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            required
-                        />
+                            required />
                     </div>
+
                     <div>
-                        <label htmlFor="password">Password:</label>
+                        <label htmlFor="password">Password:</label><br />
                         <input
                             type="password"
                             id="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            required
-                        />
+                            required />
                     </div>
+
                     {error && <p className="error">{error}</p>}
                     <button type="submit" className="btn">Enter</button>
                 </form>
