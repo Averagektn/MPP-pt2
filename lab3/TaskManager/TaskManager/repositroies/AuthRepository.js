@@ -29,7 +29,7 @@ class AuthRepository {
                 }
             });
             if (yield (0, bcrypt_1.compare)(password, user.passwordHash)) {
-                const token = jwt.sign(user.id, jwt_secret_key_1.default);
+                const token = jwt.sign({ uid: user.id }, jwt_secret_key_1.default, { expiresIn: 60 });
                 return token;
             }
             throw new Error('Invalid credentials');

@@ -21,9 +21,9 @@ function validateJwt(req, res, next) {
             }
             try {
                 const decoded = jwt.verify(token, jwt_secret_key_1.default);
-                const user = yield admin.database().ref(`users/${decoded}`).get();
+                const user = yield admin.database().ref(`users/${decoded.uid}`).get();
                 const val = user.val();
-                if (!user) {
+                if (!val) {
                     throw new Error();
                 }
                 next();

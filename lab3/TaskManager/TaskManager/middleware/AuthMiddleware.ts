@@ -12,11 +12,11 @@ export default async function validateJwt(req: express.Request, res: express.Res
         }
 
         try {
-            const decoded = jwt.verify(token, SecretKey);
+            const decoded: any = jwt.verify(token, SecretKey);
 
-            const user = await admin.database().ref(`users/${decoded}`).get();
+            const user = await admin.database().ref(`users/${decoded.uid}`).get();
             const val = user.val();
-            if (!user) {
+            if (!val) {
                 throw new Error();
             } 
 

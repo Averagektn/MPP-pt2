@@ -20,7 +20,7 @@ class AuthController {
                     sameSite: 'strict',
                     maxAge: 5 * 60 * 1000
                 }).send(); 
-        } catch {
+        } catch(err) {
             res.status(401).send();
         }
     }

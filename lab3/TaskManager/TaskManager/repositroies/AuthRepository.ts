@@ -25,7 +25,7 @@ class AuthRepository {
         });
 
         if (await compare(password, user.passwordHash)) {
-            const token = jwt.sign(user.id, SecretKey);
+            const token = jwt.sign({ uid: user.id }, SecretKey, { expiresIn: 60 });
             
             return token;
         }

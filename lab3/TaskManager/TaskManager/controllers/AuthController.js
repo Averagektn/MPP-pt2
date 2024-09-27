@@ -28,7 +28,7 @@ class AuthController {
                     maxAge: 5 * 60 * 1000
                 }).send();
             }
-            catch (_a) {
+            catch (err) {
                 res.status(401).send();
             }
         });
