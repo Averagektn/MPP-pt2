@@ -1,10 +1,26 @@
 import * as admin from 'firebase-admin';
 import express = require('express');
 import jwt = require('jsonwebtoken');
-import SecretKey from '../config/jwt_secret_key';
+import SecretKeyAccess from '../config/jwt_secret_key_access';
+import SecretKeyRefresh from '../config/jwt_secret_key_refresh';
 
 export default async function validateJwt(req: express.Request, res: express.Response, next: express.NextFunction) {
     if (req.path.startsWith('/tasks')) {
+        try {
+            const token = req.headers['authorization'].split(' ')[1];
+
+            if (!token) {
+                return res.status(401).send('Unauthorized: No token provided');
+            }
+        
+            const decoded: any = jwt.verify(token, SecretKeyAccess);
+            await checkIfUserExists(decoded.uid);
+            next();
+        } catch (error) {
+            console.error('Error verifying token:', error);
+            return res.status(401).send('Unauthorized: Invalid token');
+        }
+    } else if (req.path.startsWith('/auth/access')) {
         const token = req.cookies.token;
 
         if (!token) {
@@ -12,20 +28,22 @@ export default async function validateJwt(req: express.Request, res: express.Res
         }
 
         try {
-            const decoded: any = jwt.verify(token, SecretKey);
-
-            const user = await admin.database().ref(`users/${decoded.uid}`).get();
-            const val = user.val();
-            if (!val) {
-                throw new Error();
-            } 
-
+            const decoded: any = jwt.verify(token, SecretKeyRefresh);
+            await checkIfUserExists(decoded.uid);
             next();
         } catch (error) {
             console.error('Error verifying token:', error);
             return res.status(401).send('Unauthorized: Invalid token');
         }
-    } else {
+    } else { 
         next();
+    }
+}
+
+async function checkIfUserExists(uid: string): Promise<void> {
+    const user = await admin.database().ref(`users/${uid}`).get();
+    const val = user.val();
+    if (!val) {
+        throw new Error();
     }
 }

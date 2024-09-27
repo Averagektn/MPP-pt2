@@ -12,13 +12,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const Task_1 = require("../model/Task");
 const TaskRepository_1 = require("../repositroies/TaskRepository");
 const number_verifier_1 = require("../utils/number_verifier");
+const jwt = require("jsonwebtoken");
 class TaskController {
     createTask(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const { name, description, photo } = req.body;
             const defaultStatus = "Pending";
             let task = new Task_1.default(name, description, defaultStatus, null, null, photo);
-            task = TaskRepository_1.default.createTask(task);
+            const token = req.headers['authorization'].split(' ')[1];
+            const { uid } = jwt.decode(token);
+            task = TaskRepository_1.default.createTask(task, uid);
             res.status(201).json(task);
         });
     }
@@ -40,16 +43,20 @@ class TaskController {
         return __awaiter(this, void 0, void 0, function* () {
             const id = req.params.id;
             let task = Object.assign({}, req.body);
-            task = yield TaskRepository_1.default.updateTask(id, (_a = task.date) !== null && _a !== void 0 ? _a : null, (_b = task.status) !== null && _b !== void 0 ? _b : null);
+            const token = req.headers['authorization'].split(' ')[1];
+            const { uid } = jwt.decode(token);
+            task = yield TaskRepository_1.default.updateTask(id, (_a = task.date) !== null && _a !== void 0 ? _a : null, (_b = task.status) !== null && _b !== void 0 ? _b : null, uid);
             res.status(200).json(task);
         });
     }
     deleteTask(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const id = req.params.id;
-            const path = (yield TaskRepository_1.default.getTaskById(id)).photo;
+            const token = req.headers['authorization'].split(' ')[1];
+            const { uid } = jwt.decode(token);
+            const path = (yield TaskRepository_1.default.getTaskById(id, uid)).photo;
             try {
-                yield TaskRepository_1.default.deleteTask(id, path);
+                yield TaskRepository_1.default.deleteTask(id, path, uid);
                 res.status(204).send();
             }
             catch (error) {
@@ -60,12 +67,14 @@ class TaskController {
     getTotalPages(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const limit = parseInt(req.query.limit, null);
+            const token = req.headers['authorization'].split(' ')[1];
+            const { uid } = jwt.decode(token);
             if (!(0, number_verifier_1.default)(limit)) {
                 res.status(404).json({ error: 'Failed to retrieve tasks' });
                 return;
             }
             try {
-                const tasks = yield TaskRepository_1.default.getTasks();
+                const tasks = yield TaskRepository_1.default.getTasks(uid);
                 const pages = Math.ceil(tasks.length / limit);
                 res.status(200).send({ pages });
             }
@@ -80,12 +89,14 @@ class TaskController {
             const limit = parseInt(req.query.limit, null);
             const startWith = parseInt(req.query.startWith, null);
             let tasks = [];
+            const token = req.headers['authorization'].split(' ')[1];
+            const { uid } = jwt.decode(token);
             if (!(0, number_verifier_1.default)(limit) || !(0, number_verifier_1.default)(startWith)) {
                 res.status(404).json({ error: 'Failed to retrieve tasks' });
                 return;
             }
             try {
-                tasks = yield TaskRepository_1.default.getTasks();
+                tasks = yield TaskRepository_1.default.getTasks(uid);
             }
             catch (err) {
                 res.status(404).json({ error: 'Failed to retrieve tasks' });
@@ -115,12 +126,14 @@ class TaskController {
         return __awaiter(this, void 0, void 0, function* () {
             const limit = parseInt(req.query.limit, null);
             const startWith = parseInt(req.query.startWith, null);
+            const token = req.headers['authorization'].split(' ')[1];
+            const { uid } = jwt.decode(token);
             if (!(0, number_verifier_1.default)(limit) || !(0, number_verifier_1.default)(startWith)) {
                 res.status(404).json({ error: 'Failed to retrieve tasks' });
                 return;
             }
             try {
-                let tasks = yield TaskRepository_1.default.getTasks();
+                let tasks = yield TaskRepository_1.default.getTasks(uid);
                 ;
                 if (tasks.length < (startWith + 1) * limit) {
                     tasks = tasks.slice(startWith * limit);
@@ -138,8 +151,10 @@ class TaskController {
     getTaskById(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const id = req.params.id;
+            const token = req.headers['authorization'].split(' ')[1];
+            const { uid } = jwt.decode(token);
             try {
-                const task = yield TaskRepository_1.default.getTaskById(id);
+                const task = yield TaskRepository_1.default.getTaskById(id, uid);
                 res.status(200).json(task);
             }
             catch (error) {

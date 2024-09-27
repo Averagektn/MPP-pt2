@@ -2,6 +2,7 @@ import express = require('express');
 import Task from '../model/Task';
 import taskRepository from '../repositroies/TaskRepository';
 import isValidNumber from '../utils/number_verifier';
+import jwt = require('jsonwebtoken');
 
 class TaskController {
     async createTask(req: express.Request, res: express.Response): Promise<void> {
@@ -9,7 +10,10 @@ class TaskController {
         const defaultStatus = "Pending";
         let task = new Task(name, description, defaultStatus, null, null, photo);
 
-        task = taskRepository.createTask(task);
+        const token = req.headers['authorization'].split(' ')[1];
+        const { uid } = jwt.decode(token) as jwt.JwtPayload;
+
+        task = taskRepository.createTask(task, uid);
         res.status(201).json(task);
     }
 
@@ -29,17 +33,24 @@ class TaskController {
         const id = req.params.id;
         let task: Task = { ...req.body };
 
-        task = await taskRepository.updateTask(id, task.date ?? null, task.status ?? null);
+        const token = req.headers['authorization'].split(' ')[1];
+        const { uid } = jwt.decode(token) as jwt.JwtPayload;
+
+        task = await taskRepository.updateTask(id, task.date ?? null, task.status ?? null, uid);
 
         res.status(200).json(task);
     }
 
     async deleteTask(req: express.Request, res: express.Response): Promise<void> {
         const id = req.params.id;
-        const path = (await taskRepository.getTaskById(id)).photo;
+
+        const token = req.headers['authorization'].split(' ')[1];
+        const { uid } = jwt.decode(token) as jwt.JwtPayload;
+
+        const path = (await taskRepository.getTaskById(id, uid)).photo;
 
         try {
-            await taskRepository.deleteTask(id, path);
+            await taskRepository.deleteTask(id, path, uid);
             res.status(204).send();
         } catch (error) {
             res.status(404).json({ error: 'Failed to delete task' });
@@ -49,13 +60,16 @@ class TaskController {
     async getTotalPages(req: express.Request, res: express.Response): Promise<void> {
         const limit = parseInt(req.query.limit as string, null);
 
+        const token = req.headers['authorization'].split(' ')[1];
+        const { uid } = jwt.decode(token) as jwt.JwtPayload;
+
         if (!isValidNumber(limit)) {
             res.status(404).json({ error: 'Failed to retrieve tasks' });
             return;
         }
 
         try {
-            const tasks = await taskRepository.getTasks();
+            const tasks = await taskRepository.getTasks(uid);
             const pages = Math.ceil(tasks.length / limit);
 
             res.status(200).send({ pages });
@@ -70,13 +84,16 @@ class TaskController {
         const startWith = parseInt(req.query.startWith as string, null);
         let tasks: Task[] = [];
 
+        const token = req.headers['authorization'].split(' ')[1];
+        const { uid } = jwt.decode(token) as jwt.JwtPayload;
+
         if (!isValidNumber(limit) || !isValidNumber(startWith)) {
             res.status(404).json({ error: 'Failed to retrieve tasks' });
             return;
         }
 
         try {
-            tasks = await taskRepository.getTasks();
+            tasks = await taskRepository.getTasks(uid);
         } catch (err) {
             res.status(404).json({ error: 'Failed to retrieve tasks' });
             return;
@@ -107,13 +124,16 @@ class TaskController {
         const limit = parseInt(req.query.limit as string, null);
         const startWith = parseInt(req.query.startWith as string, null);
 
+        const token = req.headers['authorization'].split(' ')[1];
+        const { uid } = jwt.decode(token) as jwt.JwtPayload;
+
         if (!isValidNumber(limit) || !isValidNumber(startWith)) {
             res.status(404).json({ error: 'Failed to retrieve tasks' });
             return;
         }
 
         try {
-            let tasks = await taskRepository.getTasks();;
+            let tasks = await taskRepository.getTasks(uid);;
             if (tasks.length < (startWith + 1) * limit) {
                 tasks = tasks.slice(startWith * limit);
             } else {
@@ -128,8 +148,11 @@ class TaskController {
     async getTaskById(req: express.Request, res: express.Response): Promise<void> {
         const id = req.params.id;
 
+        const token = req.headers['authorization'].split(' ')[1];
+        const { uid } = jwt.decode(token) as jwt.JwtPayload;
+
         try {
-            const task = await taskRepository.getTaskById(id);
+            const task = await taskRepository.getTaskById(id, uid);
             res.status(200).json(task);
         } catch (error) {
             res.status(404).json({ error: 'Failed to retrieve task' });

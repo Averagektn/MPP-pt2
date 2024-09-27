@@ -12,24 +12,38 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const admin = require("firebase-admin");
 const bcrypt_1 = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const jwt_secret_key_1 = require("../config/jwt_secret_key");
+const jwt_secret_key_access_1 = require("../config/jwt_secret_key_access");
+const jwt_secret_key_refresh_1 = require("../config/jwt_secret_key_refresh");
 class AuthRepository {
     constructor() {
         this.db = admin.database();
         this.auth = admin.auth();
     }
-    authorizeUser(email, password) {
+    getAccessToken(refreshToken, uid) {
         return __awaiter(this, void 0, void 0, function* () {
-            const snapshot = yield this.db.ref('users').once('value');
-            let user = null;
-            snapshot.forEach(childSnapshot => {
-                const userData = childSnapshot.val();
-                if (userData.email === email) {
-                    user = Object.assign({ id: childSnapshot.key }, userData);
-                }
+            const tokenSnapshot = yield this.db.ref(`tokens/${uid}`).get();
+            const dbRefreshToken = tokenSnapshot.val();
+            if (dbRefreshToken !== refreshToken) {
+                throw new Error('Token comparison error');
+            }
+            const token = jwt.sign({ uid: uid }, jwt_secret_key_access_1.default, { expiresIn: 5 * 60 });
+            return token;
+        });
+    }
+    getRefreshToken(email, password) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const authUser = yield this.auth.getUserByEmail(email);
+            const uid = authUser.uid;
+            const snapshot = yield this.db.ref(`users/${uid}`).get();
+            let user;
+            snapshot.forEach((childSnapshot) => {
+                const data = childSnapshot.val();
+                const id = childSnapshot.key;
+                user = Object.assign(Object.assign({}, data), { id });
             });
             if (yield (0, bcrypt_1.compare)(password, user.passwordHash)) {
-                const token = jwt.sign({ uid: user.id }, jwt_secret_key_1.default, { expiresIn: 60 });
+                const token = jwt.sign({ uid: uid }, jwt_secret_key_refresh_1.default, { expiresIn: 15 * 60 });
+                yield this.db.ref(`tokens/${uid}`).set(token);
                 return token;
             }
             throw new Error('Invalid credentials');
@@ -37,8 +51,9 @@ class AuthRepository {
     }
     createUser(email, password) {
         return __awaiter(this, void 0, void 0, function* () {
+            const user = yield this.auth.createUser({ email, password });
             const passwordHash = yield (0, bcrypt_1.hash)(password, 1);
-            yield this.db.ref('users').push({ email, passwordHash });
+            yield this.db.ref(`users/${user.uid}`).push({ email, passwordHash });
         });
     }
     userExists(email) {

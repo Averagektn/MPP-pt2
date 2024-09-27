@@ -20,10 +20,10 @@ import routes from './routes/index';
 const debug = require('debug')('my express app');
 const app = express();
 const corsOptions = cors({
-    origin: 'http://localhost:5173', // Укажите адрес вашего фронтенда
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'], // Укажите необходимые методы
-    credentials: true, // Разрешаем отправку куки
-    allowedHeaders: ['Content-Type', 'Authorization'], // Укажите необходимые заголовки
+    origin: 'http://localhost:5173', 
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'], 
+    credentials: true, 
+    allowedHeaders: ['Content-Type', 'Authorization'], 
 });
 
 app.use(express.static(path.join(__dirname, 'public')));

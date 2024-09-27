@@ -47,7 +47,10 @@
     <Folder Include="routes\" />
   </ItemGroup>
   <ItemGroup>
-    <TypeScriptCompile Include="config\jwt_secret_key.ts">
+    <TypeScriptCompile Include="config\jwt_secret_key_access.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include="config\jwt_secret_key_refresh.ts">
       <SubType>Code</SubType>
     </TypeScriptCompile>
     <TypeScriptCompile Include="controllers\AuthController.ts">

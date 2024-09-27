@@ -1,23 +1,20 @@
 import * as admin from 'firebase-admin';
 import Task from '../model/Task';
 import generateUniqueFileName from '../utils/file_name_generator';
-import { Reference } from '@firebase/database-types';
 import { Bucket } from '@google-cloud/storage';
 
 class TaskRepository {
-    tasksDbRef = '/tasks-v1';
+    tasksDbRef = '/tasks-v2';
     db: admin.database.Database;
-    dbRef: Reference;
     storageBucket: Bucket;
 
     constructor() {
         this.db = admin.database();
-        this.dbRef = this.db.ref(this.tasksDbRef);
         this.storageBucket = admin.storage().bucket();
     }
 
-    createTask(task: Task): Task {
-        const ref = this.dbRef.push(task);
+    createTask(task: Task, uid: string): Task {
+        const ref = this.db.ref(`${this.tasksDbRef}/${uid}`).push(task);
         task.id = ref.key;
 
         return task
@@ -44,8 +41,8 @@ class TaskRepository {
         return publicUrl;
     }
 
-    async deleteTask(id: string, path: string | null): Promise<void> {
-        await this.db.ref(`${this.tasksDbRef}/${id}`).remove();
+    async deleteTask(id: string, path: string | null, uid: string): Promise<void> {
+        await this.db.ref(`${this.tasksDbRef}/${uid}/${id}`).remove();
 
         if (path) {
             const fileName = path.split('/').pop();
@@ -53,28 +50,28 @@ class TaskRepository {
         }
     }
 
-    async getTaskById(id: string): Promise<Task> {
-        const res = (await this.db.ref(`${this.tasksDbRef}/${id}`).get()).val();
+    async getTaskById(id: string, uid: string): Promise<Task> {
+        const res = (await this.db.ref(`${this.tasksDbRef}/${uid}/${id}`).get()).val();
 
         return { ...res, id };
     }
 
-    async updateTask(id: string, date: string | null, status: string | null): Promise<Task> {
+    async updateTask(id: string, date: string | null, status: string | null, uid: string): Promise<Task> {
         if (date) {
-            await this.db.ref(`${this.tasksDbRef}/${id}`).update({ date })
+            await this.db.ref(`${this.tasksDbRef}/${uid}/${id}`).update({ date })
         }
         if (status) {
-            await this.db.ref(`${this.tasksDbRef}/${id}`).update({ status })
+            await this.db.ref(`${this.tasksDbRef}/${uid}/${id}`).update({ status })
         }
 
-        const task = (await this.db.ref(`${this.tasksDbRef}/${id}`).get()).val();
+        const task = (await this.db.ref(`${this.tasksDbRef}/${uid}/${id}`).get()).val();
 
         return { ...task, id };
     }
 
-    async getTasks(): Promise<Task[]> {
+    async getTasks(uid: string): Promise<Task[]> {
         const tasks: Task[] = [];
-        const snapshot = await this.dbRef.get();
+        const snapshot = await this.db.ref(`${this.tasksDbRef}/${uid}`).get();
 
         if (snapshot.exists()) {
             snapshot.forEach((childSnapshot) => {
@@ -87,8 +84,8 @@ class TaskRepository {
         return tasks;
     }
 
-    async getPageTasks(n: number, lastKey: string | null): Promise<Task[]> {
-        let query = this.dbRef.orderByKey().limitToFirst(n);
+    async getPageTasks(n: number, lastKey: string | null, uid: string): Promise<Task[]> {
+        let query = this.db.ref(`${this.tasksDbRef}/${uid}`).orderByKey().limitToFirst(n);
         const tasks: Task[] = [];
 
         if (lastKey) {

@@ -13,13 +13,12 @@ const admin = require("firebase-admin");
 const file_name_generator_1 = require("../utils/file_name_generator");
 class TaskRepository {
     constructor() {
-        this.tasksDbRef = '/tasks-v1';
+        this.tasksDbRef = '/tasks-v2';
         this.db = admin.database();
-        this.dbRef = this.db.ref(this.tasksDbRef);
         this.storageBucket = admin.storage().bucket();
     }
-    createTask(task) {
-        const ref = this.dbRef.push(task);
+    createTask(task, uid) {
+        const ref = this.db.ref(`${this.tasksDbRef}/${uid}`).push(task);
         task.id = ref.key;
         return task;
     }
@@ -41,37 +40,37 @@ class TaskRepository {
             return publicUrl;
         });
     }
-    deleteTask(id, path) {
+    deleteTask(id, path, uid) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.db.ref(`${this.tasksDbRef}/${id}`).remove();
+            yield this.db.ref(`${this.tasksDbRef}/${uid}/${id}`).remove();
             if (path) {
                 const fileName = path.split('/').pop();
                 yield this.storageBucket.file(fileName).delete();
             }
         });
     }
-    getTaskById(id) {
+    getTaskById(id, uid) {
         return __awaiter(this, void 0, void 0, function* () {
-            const res = (yield this.db.ref(`${this.tasksDbRef}/${id}`).get()).val();
+            const res = (yield this.db.ref(`${this.tasksDbRef}/${uid}/${id}`).get()).val();
             return Object.assign(Object.assign({}, res), { id });
         });
     }
-    updateTask(id, date, status) {
+    updateTask(id, date, status, uid) {
         return __awaiter(this, void 0, void 0, function* () {
             if (date) {
-                yield this.db.ref(`${this.tasksDbRef}/${id}`).update({ date });
+                yield this.db.ref(`${this.tasksDbRef}/${uid}/${id}`).update({ date });
             }
             if (status) {
-                yield this.db.ref(`${this.tasksDbRef}/${id}`).update({ status });
+                yield this.db.ref(`${this.tasksDbRef}/${uid}/${id}`).update({ status });
             }
-            const task = (yield this.db.ref(`${this.tasksDbRef}/${id}`).get()).val();
+            const task = (yield this.db.ref(`${this.tasksDbRef}/${uid}/${id}`).get()).val();
             return Object.assign(Object.assign({}, task), { id });
         });
     }
-    getTasks() {
+    getTasks(uid) {
         return __awaiter(this, void 0, void 0, function* () {
             const tasks = [];
-            const snapshot = yield this.dbRef.get();
+            const snapshot = yield this.db.ref(`${this.tasksDbRef}/${uid}`).get();
             if (snapshot.exists()) {
                 snapshot.forEach((childSnapshot) => {
                     const data = childSnapshot.val();
@@ -82,9 +81,9 @@ class TaskRepository {
             return tasks;
         });
     }
-    getPageTasks(n, lastKey) {
+    getPageTasks(n, lastKey, uid) {
         return __awaiter(this, void 0, void 0, function* () {
-            let query = this.dbRef.orderByKey().limitToFirst(n);
+            let query = this.db.ref(`${this.tasksDbRef}/${uid}`).orderByKey().limitToFirst(n);
             const tasks = [];
             if (lastKey) {
                 query = query.startAt(lastKey);

@@ -10,8 +10,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const AuthRepository_1 = require("../repositroies/AuthRepository");
+const jwt = require("jsonwebtoken");
 class AuthController {
-    performAuth(req, res) {
+    getRefreshToken(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const { email, password } = req.body;
             if (!email || !password) {
@@ -19,7 +20,7 @@ class AuthController {
                 return;
             }
             try {
-                const token = yield AuthRepository_1.default.authorizeUser(email, password);
+                const token = yield AuthRepository_1.default.getRefreshToken(email, password);
                 res.status(200)
                     .cookie('token', token, {
                     httpOnly: true,
@@ -27,6 +28,21 @@ class AuthController {
                     sameSite: 'strict',
                     maxAge: 5 * 60 * 1000
                 }).send();
+            }
+            catch (err) {
+                res.status(401).send();
+            }
+        });
+    }
+    getAccessToken(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const token = req.cookies.token;
+            const { uid } = jwt.decode(token);
+            try {
+                const accessToken = yield AuthRepository_1.default.getAccessToken(token, uid);
+                res.status(200)
+                    .header('Authorization', `Bearer ${accessToken}`)
+                    .send();
             }
             catch (err) {
                 res.status(401).send();

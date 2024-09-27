@@ -15,7 +15,8 @@ router.get('/tasks', taskController.getTasks);
 router.get('/tasks/pages', taskController.getTotalPages);
 router.get('/tasks/:id', taskController.getTaskById);
 
-router.post('/auth', authController.performAuth);
 router.post('/auth/users', authController.createUser);
+router.post('/auth/access', authController.getAccessToken);
+router.post('/auth/refresh', authController.getRefreshToken);
 
 export default router;
