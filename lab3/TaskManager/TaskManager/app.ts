@@ -19,14 +19,15 @@ import routes from './routes/index';
 
 const debug = require('debug')('my express app');
 const app = express();
+const corsOptions = cors({
+    origin: 'http://localhost:5173', // Укажите адрес вашего фронтенда
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'], // Укажите необходимые методы
+    credentials: true, // Разрешаем отправку куки
+    allowedHeaders: ['Content-Type', 'Authorization'], // Укажите необходимые заголовки
+});
 
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(cors({
-    origin: '*', 
-    methods: '*',
-    credentials: true,
-    allowedHeaders: '*'
-}));
+app.use(corsOptions);
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.json());
@@ -34,7 +35,7 @@ app.use(authorize);
 
 app.use('/', routes);
 
-app.options('*', cors());
+app.options('*', corsOptions);
 
 app.set('port', process.env.PORT || 3000);
 

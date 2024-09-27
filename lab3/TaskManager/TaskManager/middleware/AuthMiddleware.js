@@ -14,7 +14,7 @@ const jwt = require("jsonwebtoken");
 const jwt_secret_key_1 = require("../config/jwt_secret_key");
 function validateJwt(req, res, next) {
     return __awaiter(this, void 0, void 0, function* () {
-        if (req.originalUrl === '/tasks') {
+        if (req.path.startsWith('/tasks')) {
             const token = req.cookies.token;
             if (!token) {
                 return res.status(401).send('Unauthorized: No token provided');

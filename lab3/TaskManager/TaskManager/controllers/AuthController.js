@@ -14,12 +14,16 @@ class AuthController {
     performAuth(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const { email, password } = req.body;
+            if (!email || !password) {
+                res.status(401).send();
+                return;
+            }
             try {
                 const token = yield AuthRepository_1.default.authorizeUser(email, password);
                 res.status(200)
                     .cookie('token', token, {
                     httpOnly: true,
-                    secure: true,
+                    secure: false,
                     sameSite: 'strict',
                     maxAge: 5 * 60 * 1000
                 }).send();

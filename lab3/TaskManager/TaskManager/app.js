@@ -15,19 +15,20 @@ const authApp = admin.initializeApp({
 const index_1 = require("./routes/index");
 const debug = require('debug')('my express app');
 const app = express();
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(cors({
-    origin: '*',
-    methods: '*',
+const corsOptions = cors({
+    origin: 'http://localhost:5173',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     credentials: true,
-    allowedHeaders: '*'
-}));
+    allowedHeaders: ['Content-Type', 'Authorization'], // ������� ����������� ���������
+});
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(corsOptions);
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.json());
 app.use(AuthMiddleware_1.default);
 app.use('/', index_1.default);
-app.options('*', cors());
+app.options('*', corsOptions);
 app.set('port', process.env.PORT || 3000);
 const server = app.listen(app.get('port'), function () {
     debug(`Express server listening on port ${server.address().port}`);

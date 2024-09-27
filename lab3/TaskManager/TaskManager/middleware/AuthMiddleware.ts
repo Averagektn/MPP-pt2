@@ -4,7 +4,7 @@ import jwt = require('jsonwebtoken');
 import SecretKey from '../config/jwt_secret_key';
 
 export default async function validateJwt(req: express.Request, res: express.Response, next: express.NextFunction) {
-    if (req.originalUrl === '/tasks') {
+    if (req.path.startsWith('/tasks')) {
         const token = req.cookies.token;
 
         if (!token) {

@@ -2,6 +2,7 @@ import { ChangeEvent, useEffect, useRef, useState } from 'react'
 import '../public/stylesheets/main.css'
 import React from 'react'
 import Task from '../model/Task'
+import AuthModal from './Auth';
 
 const TaskList: React.FC = () => {
     const [taskName, setTaskName] = useState<string>('');
@@ -9,6 +10,7 @@ const TaskList: React.FC = () => {
     const [file, setFile] = useState<File | null>(null);
     const [tasks, setTasks] = useState<Task[]>([]); 
     const [currentPage, setCurrentPage] = useState(0);
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const selectFilterRef = useRef<HTMLSelectElement | null>(null);
@@ -19,9 +21,13 @@ const TaskList: React.FC = () => {
     useEffect(() => {
         const fetchTasks = async (): Promise<void> => {
             try {
-                const response = await fetch(`http://localhost:1337/tasks?limit=${defLimit}&startWith=0`);
-                if (!response.ok) {
-                    throw new Error('Tasks loading error');
+                const response = await fetch(`http://localhost:1337/tasks?limit=${defLimit}&startWith=0`, {
+                    method: "GET",
+                    credentials: 'include'
+                });
+                if (response.status === 401) {
+                    setIsAuthModalOpen(true); 
+                    throw new Error();
                 }
                 const data = await response.json();
                 setTasks(data); 
@@ -229,6 +235,7 @@ const TaskList: React.FC = () => {
         <div className="container">
             <h1>Task List</h1>
             <hr />
+            <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
             <section>
                 <div className="row">
                     <form onSubmit={handleCreateTask}>
