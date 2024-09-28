@@ -36,10 +36,15 @@ const io = new Server(server);
 io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
 
+    socket.on('message', async (data) => {
+        console.log('User sent:', data);
+        socket.emit('taskCreated', JSON.stringify(data));
+    });
+
     socket.on('createTask', async (data) => {
         //const result = await taskController.createTask(data);
         const result = { name: 'a', description: 'b', photo: 'c' };
-        socket.emit('taskCreated', result);
+        socket.emit('createTask', JSON.stringify(result));
     });
 
     socket.on('uploadFile', async (file) => {

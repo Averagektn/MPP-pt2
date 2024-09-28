@@ -36,10 +36,15 @@ const io = new socket_io_1.Server(server);
 });*/
 io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
+    socket.on('message', (data) => __awaiter(void 0, void 0, void 0, function* () {
+        console.log('A user sent:', data);
+        const result = { name: 'a', description: 'b', photo: 'c' };
+        socket.emit('taskCreated', JSON.stringify(result));
+    }));
     socket.on('createTask', (data) => __awaiter(void 0, void 0, void 0, function* () {
         //const result = await taskController.createTask(data);
         const result = { name: 'a', description: 'b', photo: 'c' };
-        socket.emit('taskCreated', result);
+        socket.emit('createTask', JSON.stringify(result));
     }));
     socket.on('uploadFile', (file) => __awaiter(void 0, void 0, void 0, function* () {
         //const result = await taskController.uploadFile(file);
