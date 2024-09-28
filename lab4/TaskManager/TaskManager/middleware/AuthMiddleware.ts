@@ -1,49 +1,46 @@
 import * as admin from 'firebase-admin';
-import express = require('express');
 import jwt = require('jsonwebtoken');
 import SecretKeyAccess from '../config/jwt_secret_key_access';
 import SecretKeyRefresh from '../config/jwt_secret_key_refresh';
+import WsRequest from '../model/WsRequest';
 
-export default async function validateJwt(req: express.Request, res: express.Response, next: express.NextFunction) {
+export default async function validateJwt(req: WsRequest): Promise<boolean> {
     if (req.path.startsWith('/tasks')) {
         try {
-            const token = req.headers['authorization'].split(' ')[1];
+            const token = req.accessToken;
 
             if (!token) {
-                return res.status(401).send('Unauthorized: No token provided');
+                return false;
             }
         
             const decoded: any = jwt.verify(token, SecretKeyAccess);
-            await checkIfUserExists(decoded.uid);
-            next();
+            return await checkIfUserExists(decoded.uid);
         } catch (error) {
             console.error('Error verifying token:', error);
-            return res.status(401).send('Unauthorized: Invalid token');
+            return false;
         }
     } else if (req.path.startsWith('/auth/access')) {
-        const token = req.cookies.token;
+        const token = req.refreshToken;
 
         if (!token) {
-            return res.status(401).send('Unauthorized: No token provided');
+            return false;
         }
 
         try {
             const decoded: any = jwt.verify(token, SecretKeyRefresh);
-            await checkIfUserExists(decoded.uid);
-            next();
+            return await checkIfUserExists(decoded.uid);
         } catch (error) {
             console.error('Error verifying token:', error);
-            return res.status(401).send('Unauthorized: Invalid token');
+            return false;
         }
     } else { 
-        next();
+        return true;
     }
 }
 
-async function checkIfUserExists(uid: string): Promise<void> {
+async function checkIfUserExists(uid: string): Promise<boolean> {
     const user = await admin.database().ref(`users/${uid}`).get();
     const val = user.val();
-    if (!val) {
-        throw new Error();
-    }
+
+    return val;
 }

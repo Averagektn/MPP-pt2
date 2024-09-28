@@ -31,7 +31,6 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="app.ts" />
-    <None Include="routes\index.ts" />
     <Content Include="config\taskmanager-dedf9-firebase-adminsdk-uia8o-f0091c57e0.json" />
     <Content Include="tsconfig.json" />
     <Content Include="package.json" />
@@ -45,7 +44,6 @@
     <Folder Include="services\" />
     <Folder Include="utils\" />
     <Folder Include="repositroies\" />
-    <Folder Include="routes\" />
   </ItemGroup>
   <ItemGroup>
     <TypeScriptCompile Include="config\jwt_secret_key_access.ts">
@@ -64,6 +62,12 @@
       <SubType>Code</SubType>
     </TypeScriptCompile>
     <TypeScriptCompile Include="model\Task.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include="model\WsRequest.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include="model\WsResponse.ts">
       <SubType>Code</SubType>
     </TypeScriptCompile>
     <TypeScriptCompile Include="repositroies\AuthRepository.ts">

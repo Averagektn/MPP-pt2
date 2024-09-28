@@ -1,14 +1,10 @@
-import express = require('express');
 import authService from '../services/AuthService';
-import jwt = require('jsonwebtoken');
+import WsResponse from '../model/WsResponse';
 
 class AuthController {
-    async getRefreshToken(req: express.Request, res: express.Response): Promise<void> {
-        const { email, password } = req.body;
-
+    async getRefreshToken(email: string, password: string): Promise<WsResponse> {
         if (!email || !password) {
-            res.status(401).send();
-            return;
+            return new WsResponse(401, null);
         }
 
         try {
@@ -16,37 +12,23 @@ class AuthController {
             const uid = await authService.getUidByEmail(email);
             const accessToken = await authService.getAccessToken(refreshToken, uid);
 
-            res.status(200)
-                .header('Authorization', `Bearer ${accessToken}`)
-                .cookie('token', refreshToken, {
-                    httpOnly: true,
-                    secure: false,
-                    sameSite: 'strict',
-                    maxAge: 5 * 60 * 1000
-                }).send();
+            return new WsResponse(200, { refreshToken, accessToken });
         } catch (err) {
-            res.status(401).send();
+            return new WsResponse(401, null, `${err}`);
         }
     }
 
-    async getAccessToken(req: express.Request, res: express.Response): Promise<void> {
-        const token: string = req.cookies.token;
-        const { uid } = jwt.decode(token) as jwt.JwtPayload;
-
+    async getAccessToken(uid: string, refreshToken: string): Promise<WsResponse> {
         try {
-            const accessToken = await authService.getAccessToken(token, uid);
+            const accessToken = await authService.getAccessToken(refreshToken, uid);
 
-            res.status(200)
-                .header('Authorization', `Bearer ${accessToken}`)
-                .send();
+            return new WsResponse(200, { accessToken });
         } catch (err) {
-            res.status(401).send();
+            return new WsResponse(401, null, `${err}`);
         }
     }
 
-    async createUser(req: express.Request, res: express.Response): Promise<void> {
-        const { email, password } = req.body;
-
+    async createUser(email: string, password: string): Promise<WsResponse> {
         try {
             await authService.createUser(email, password);
 
@@ -54,18 +36,11 @@ class AuthController {
             const uid = await authService.getUidByEmail(email);
             const accessToken = await authService.getAccessToken(refreshToken, uid);
 
-            res.status(201)
-                .header('Authorization', `Bearer ${accessToken}`)
-                .cookie('token', refreshToken, {
-                    httpOnly: true,
-                    secure: false,
-                    sameSite: 'strict',
-                    maxAge: 30 * 60 * 1000
-                }).send();
-        } catch {
-            res.status(401).send();
+            return new WsResponse(201, { refreshToken, accessToken });
+        } catch (err) {
+            return new WsResponse(401, null, `${err}`);
         }
     }
 }
 
-export default new AuthController()
+export default new AuthController();

@@ -10,73 +10,73 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express = require("express");
+const AuthMiddleware_1 = require("./middleware/AuthMiddleware");
 const socket_io_1 = require("socket.io");
+const TaskController_1 = require("./controllers/TaskController");
+const admin = require("firebase-admin");
+const jwt = require("jsonwebtoken");
+const WsResponse_1 = require("./model/WsResponse");
 const http = require('http');
-/*const serviceAccount = require("./config/taskmanager-dedf9-firebase-adminsdk-uia8o-f0091c57e0.json");
+const serviceAccount = require("./config/taskmanager-dedf9-firebase-adminsdk-uia8o-f0091c57e0.json");
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
     databaseURL: "https://taskmanager-dedf9-default-rtdb.europe-west1.firebasedatabase.app",
     storageBucket: "taskmanager-dedf9.appspot.com"
-});*/
+});
 const app = express();
 const server = http.createServer(app);
 const io = new socket_io_1.Server(server);
-/*io.use((socket, next) => {
-    const token = socket.handshake.query.token;
-
-    //authorize();
-
-    if (token === 'valid_token') {
-        next();
-    } else {
-        const err: any = new Error('Unauthorized');
-        err.data = { content: "Please retry later" };
-        next(err);
-    }
-});*/
 io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
     socket.on('message', (data) => __awaiter(void 0, void 0, void 0, function* () {
-        console.log('A user sent:', data);
-        const result = { name: 'a', description: 'b', photo: 'c' };
-        socket.emit('taskCreated', JSON.stringify(result));
+        console.log('User sent:', data);
+        socket.emit('message/feedback', JSON.stringify(data));
     }));
-    socket.on('createTask', (data) => __awaiter(void 0, void 0, void 0, function* () {
-        //const result = await taskController.createTask(data);
-        const result = { name: 'a', description: 'b', photo: 'c' };
-        socket.emit('createTask', JSON.stringify(result));
+    socket.on('tasks/create', (data) => __awaiter(void 0, void 0, void 0, function* () {
+        if (yield (0, AuthMiddleware_1.default)(data)) {
+            const { uid } = jwt.decode(data.accessToken);
+            const res = yield TaskController_1.default.createTask(data.data, uid);
+            socket.emit('tasks/created', JSON.stringify(res));
+        }
+        else {
+            socket.emit('tasks/created', JSON.stringify(new WsResponse_1.default(400, null)));
+        }
     }));
-    socket.on('uploadFile', (file) => __awaiter(void 0, void 0, void 0, function* () {
-        //const result = await taskController.uploadFile(file);
-        const result = { name: 'a', description: 'b', photo: 'c' };
-        socket.emit('fileUploaded', result);
+    socket.on('tasks/file/upload', (data) => __awaiter(void 0, void 0, void 0, function* () {
+        if (yield (0, AuthMiddleware_1.default)(data)) {
+            const result = yield TaskController_1.default.uploadFile(data.data);
+            socket.emit('tasks/file/uploaded', result);
+        }
+        else {
+            socket.emit('tasks/file/upload', JSON.stringify(new WsResponse_1.default(400, null)));
+        }
     }));
-    socket.on('updateTask', (taskId, data) => __awaiter(void 0, void 0, void 0, function* () {
+    socket.on('updateTask', (data) => __awaiter(void 0, void 0, void 0, function* () {
         //const result = await taskController.updateTask(taskId, data);
         const result = { name: 'a', description: 'b', photo: 'c' };
         socket.emit('taskUpdated', result);
     }));
-    socket.on('deleteTask', (taskId) => __awaiter(void 0, void 0, void 0, function* () {
+    socket.on('deleteTask', (data) => __awaiter(void 0, void 0, void 0, function* () {
         //const result = await taskController.deleteTask(taskId);
         const result = { name: 'a', description: 'b', photo: 'c' };
         socket.emit('taskDeleted', result);
     }));
-    socket.on('filterTasks', (filter) => __awaiter(void 0, void 0, void 0, function* () {
+    socket.on('filterTasks', (data) => __awaiter(void 0, void 0, void 0, function* () {
         //const result = await taskController.filterTasks(filter);
         const result = { name: 'a', description: 'b', photo: 'c' };
         socket.emit('tasksFiltered', result);
     }));
-    socket.on('getTasks', () => __awaiter(void 0, void 0, void 0, function* () {
+    socket.on('getTasks', (data) => __awaiter(void 0, void 0, void 0, function* () {
         //const result = await taskController.getTasks();
         const result = { name: 'a', description: 'b', photo: 'c' };
         socket.emit('tasksFetched', result);
     }));
-    socket.on('getTotalPages', () => __awaiter(void 0, void 0, void 0, function* () {
+    socket.on('getTotalPages', (data) => __awaiter(void 0, void 0, void 0, function* () {
         //const result = await taskController.getTotalPages();
         const result = { name: 'a', description: 'b', photo: 'c' };
         socket.emit('totalPagesFetched', result);
     }));
-    socket.on('getTaskById', (taskId) => __awaiter(void 0, void 0, void 0, function* () {
+    socket.on('getTaskById', (data) => __awaiter(void 0, void 0, void 0, function* () {
         //const result = await taskController.getTaskById(taskId);
         const result = { name: 'a', description: 'b', photo: 'c' };
         socket.emit('taskFetched', result);
@@ -86,12 +86,12 @@ io.on('connection', (socket) => {
         const result = { name: 'a', description: 'b', photo: 'c' };
         socket.emit('userCreated', result);
     }));
-    socket.on('getAccessToken', (credentials) => __awaiter(void 0, void 0, void 0, function* () {
+    socket.on('getAccessToken', (data) => __awaiter(void 0, void 0, void 0, function* () {
         //const result = await authController.getAccessToken(credentials);
         const result = { name: 'a', description: 'b', photo: 'c' };
         socket.emit('accessTokenFetched', result);
     }));
-    socket.on('getRefreshToken', (token) => __awaiter(void 0, void 0, void 0, function* () {
+    socket.on('getRefreshToken', (data) => __awaiter(void 0, void 0, void 0, function* () {
         //const result = await authController.getRefreshToken(token);
         const result = { name: 'a', description: 'b', photo: 'c' };
         socket.emit('refreshTokenFetched', result);

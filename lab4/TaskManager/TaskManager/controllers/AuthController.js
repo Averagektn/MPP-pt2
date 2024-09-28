@@ -10,67 +10,46 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const AuthService_1 = require("../services/AuthService");
-const jwt = require("jsonwebtoken");
+const WsResponse_1 = require("../model/WsResponse");
 class AuthController {
-    getRefreshToken(req, res) {
+    getRefreshToken(email, password) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { email, password } = req.body;
             if (!email || !password) {
-                res.status(401).send();
-                return;
+                return new WsResponse_1.default(401, null);
             }
             try {
                 const refreshToken = yield AuthService_1.default.getRefreshToken(email, password);
                 const uid = yield AuthService_1.default.getUidByEmail(email);
                 const accessToken = yield AuthService_1.default.getAccessToken(refreshToken, uid);
-                res.status(200)
-                    .header('Authorization', `Bearer ${accessToken}`)
-                    .cookie('token', refreshToken, {
-                    httpOnly: true,
-                    secure: false,
-                    sameSite: 'strict',
-                    maxAge: 5 * 60 * 1000
-                }).send();
+                return new WsResponse_1.default(200, { refreshToken, accessToken });
             }
             catch (err) {
-                res.status(401).send();
+                return new WsResponse_1.default(401, null, `${err}`);
             }
         });
     }
-    getAccessToken(req, res) {
+    getAccessToken(uid, refreshToken) {
         return __awaiter(this, void 0, void 0, function* () {
-            const token = req.cookies.token;
-            const { uid } = jwt.decode(token);
             try {
-                const accessToken = yield AuthService_1.default.getAccessToken(token, uid);
-                res.status(200)
-                    .header('Authorization', `Bearer ${accessToken}`)
-                    .send();
+                const accessToken = yield AuthService_1.default.getAccessToken(refreshToken, uid);
+                return new WsResponse_1.default(200, { accessToken });
             }
             catch (err) {
-                res.status(401).send();
+                return new WsResponse_1.default(401, null, `${err}`);
             }
         });
     }
-    createUser(req, res) {
+    createUser(email, password) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { email, password } = req.body;
             try {
                 yield AuthService_1.default.createUser(email, password);
                 const refreshToken = yield AuthService_1.default.getRefreshToken(email, password);
                 const uid = yield AuthService_1.default.getUidByEmail(email);
                 const accessToken = yield AuthService_1.default.getAccessToken(refreshToken, uid);
-                res.status(201)
-                    .header('Authorization', `Bearer ${accessToken}`)
-                    .cookie('token', refreshToken, {
-                    httpOnly: true,
-                    secure: false,
-                    sameSite: 'strict',
-                    maxAge: 30 * 60 * 1000
-                }).send();
+                return new WsResponse_1.default(201, { refreshToken, accessToken });
             }
-            catch (_a) {
-                res.status(401).send();
+            catch (err) {
+                return new WsResponse_1.default(401, null, `${err}`);
             }
         });
     }

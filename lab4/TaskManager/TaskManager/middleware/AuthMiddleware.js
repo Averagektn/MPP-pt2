@@ -13,40 +13,38 @@ const admin = require("firebase-admin");
 const jwt = require("jsonwebtoken");
 const jwt_secret_key_access_1 = require("../config/jwt_secret_key_access");
 const jwt_secret_key_refresh_1 = require("../config/jwt_secret_key_refresh");
-function validateJwt(req, res, next) {
+function validateJwt(req) {
     return __awaiter(this, void 0, void 0, function* () {
         if (req.path.startsWith('/tasks')) {
             try {
-                const token = req.headers['authorization'].split(' ')[1];
+                const token = req.accessToken;
                 if (!token) {
-                    return res.status(401).send('Unauthorized: No token provided');
+                    return false;
                 }
                 const decoded = jwt.verify(token, jwt_secret_key_access_1.default);
-                yield checkIfUserExists(decoded.uid);
-                next();
+                return yield checkIfUserExists(decoded.uid);
             }
             catch (error) {
                 console.error('Error verifying token:', error);
-                return res.status(401).send('Unauthorized: Invalid token');
+                return false;
             }
         }
         else if (req.path.startsWith('/auth/access')) {
-            const token = req.cookies.token;
+            const token = req.refreshToken;
             if (!token) {
-                return res.status(401).send('Unauthorized: No token provided');
+                return false;
             }
             try {
                 const decoded = jwt.verify(token, jwt_secret_key_refresh_1.default);
-                yield checkIfUserExists(decoded.uid);
-                next();
+                return yield checkIfUserExists(decoded.uid);
             }
             catch (error) {
                 console.error('Error verifying token:', error);
-                return res.status(401).send('Unauthorized: Invalid token');
+                return false;
             }
         }
         else {
-            next();
+            return true;
         }
     });
 }
@@ -55,9 +53,7 @@ function checkIfUserExists(uid) {
     return __awaiter(this, void 0, void 0, function* () {
         const user = yield admin.database().ref(`users/${uid}`).get();
         const val = user.val();
-        if (!val) {
-            throw new Error();
-        }
+        return val;
     });
 }
 //# sourceMappingURL=AuthMiddleware.js.map
