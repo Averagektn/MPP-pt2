@@ -20,9 +20,12 @@ class AuthController {
                 return;
             }
             try {
-                const token = yield AuthRepository_1.default.getRefreshToken(email, password);
+                const refreshToken = yield AuthRepository_1.default.getRefreshToken(email, password);
+                const uid = yield AuthRepository_1.default.getUidByEmail(email);
+                const accessToken = yield AuthRepository_1.default.getAccessToken(refreshToken, uid);
                 res.status(200)
-                    .cookie('token', token, {
+                    .header('Authorization', `Bearer ${accessToken}`)
+                    .cookie('token', refreshToken, {
                     httpOnly: true,
                     secure: false,
                     sameSite: 'strict',
@@ -54,7 +57,17 @@ class AuthController {
             const { email, password } = req.body;
             try {
                 yield AuthRepository_1.default.createUser(email, password);
-                res.status(201).send();
+                const refreshToken = yield AuthRepository_1.default.getRefreshToken(email, password);
+                const uid = yield AuthRepository_1.default.getUidByEmail(email);
+                const accessToken = yield AuthRepository_1.default.getAccessToken(refreshToken, uid);
+                res.status(201)
+                    .header('Authorization', `Bearer ${accessToken}`)
+                    .cookie('token', refreshToken, {
+                    httpOnly: true,
+                    secure: false,
+                    sameSite: 'strict',
+                    maxAge: 30 * 60 * 1000
+                }).send();
             }
             catch (_a) {
                 res.status(401).send();

@@ -26,7 +26,7 @@ class AuthRepository {
             if (dbRefreshToken !== refreshToken) {
                 throw new Error('Token comparison error');
             }
-            const token = jwt.sign({ uid: uid }, jwt_secret_key_access_1.default, { expiresIn: 5 * 60 });
+            const token = jwt.sign({ uid: uid }, jwt_secret_key_access_1.default, { expiresIn: 3 * 60 });
             return token;
         });
     }
@@ -42,7 +42,7 @@ class AuthRepository {
                 user = Object.assign(Object.assign({}, data), { id });
             });
             if (yield (0, bcrypt_1.compare)(password, user.passwordHash)) {
-                const token = jwt.sign({ uid: uid }, jwt_secret_key_refresh_1.default, { expiresIn: 15 * 60 });
+                const token = jwt.sign({ uid: uid }, jwt_secret_key_refresh_1.default, { expiresIn: 30 * 60 });
                 yield this.db.ref(`tokens/${uid}`).set(token);
                 return token;
             }
@@ -54,6 +54,12 @@ class AuthRepository {
             const user = yield this.auth.createUser({ email, password });
             const passwordHash = yield (0, bcrypt_1.hash)(password, 1);
             yield this.db.ref(`users/${user.uid}`).push({ email, passwordHash });
+        });
+    }
+    getUidByEmail(email) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const user = yield this.auth.getUserByEmail(email);
+            return user.uid;
         });
     }
     userExists(email) {

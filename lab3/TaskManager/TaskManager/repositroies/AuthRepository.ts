@@ -3,7 +3,6 @@ import { compare, hash } from 'bcrypt';
 import jwt = require('jsonwebtoken');
 import SecretKeyAccess from '../config/jwt_secret_key_access';
 import SecretKeyRefresh from '../config/jwt_secret_key_refresh';
-import { randomInt } from 'crypto';
 
 class AuthRepository {
     auth: admin.auth.Auth;
@@ -22,7 +21,7 @@ class AuthRepository {
             throw new Error('Token comparison error');
         }
 
-        const token = jwt.sign({ uid: uid }, SecretKeyAccess, { expiresIn: 5 * 60 });
+        const token = jwt.sign({ uid: uid }, SecretKeyAccess, { expiresIn: 3 * 60 });
 
         return token;
     }
@@ -40,7 +39,7 @@ class AuthRepository {
         });
 
         if (await compare(password, user.passwordHash)) {
-            const token = jwt.sign({ uid: uid }, SecretKeyRefresh, { expiresIn: 15 * 60 });
+            const token = jwt.sign({ uid: uid }, SecretKeyRefresh, { expiresIn: 30 * 60 });
             await this.db.ref(`tokens/${uid}`).set(token);
 
             return token;
@@ -54,6 +53,12 @@ class AuthRepository {
         const passwordHash = await hash(password, 1);
 
         await this.db.ref(`users/${user.uid}`).push({ email, passwordHash });
+    }
+
+    async getUidByEmail(email: string): Promise<string> {
+        const user = await this.auth.getUserByEmail(email);
+
+        return user.uid;
     }
 
     async userExists(email: string): Promise<boolean> {

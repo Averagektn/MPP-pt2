@@ -13,8 +13,11 @@ class AuthController {
 
         try {
             const refreshToken = await authRepository.getRefreshToken(email, password);
+            const uid = await authRepository.getUidByEmail(email);
+            const accessToken = await authRepository.getAccessToken(refreshToken, uid);
 
             res.status(200)
+                .header('Authorization', `Bearer ${accessToken}`)
                 .cookie('token', refreshToken, {
                     httpOnly: true,
                     secure: false,
@@ -46,7 +49,19 @@ class AuthController {
 
         try {
             await authRepository.createUser(email, password);
-            res.status(201).send();
+
+            const refreshToken = await authRepository.getRefreshToken(email, password);
+            const uid = await authRepository.getUidByEmail(email);
+            const accessToken = await authRepository.getAccessToken(refreshToken, uid);
+
+            res.status(201)
+                .header('Authorization', `Bearer ${accessToken}`)
+                .cookie('token', refreshToken, {
+                    httpOnly: true,
+                    secure: false,
+                    sameSite: 'strict',
+                    maxAge: 30 * 60 * 1000
+                }).send();
         } catch {
             res.status(401).send();
         }
