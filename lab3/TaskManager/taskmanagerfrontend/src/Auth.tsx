@@ -22,13 +22,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
+                credentials: 'include',
                 body: JSON.stringify({ email, password }),
             });
-            console.log('Registration successful:', response.json());
-
-            await handleSubmitLogin(event);
+            if (response.ok) {
+                console.log('Registration successful:');
+                onClose();   
+            }
         } catch (err) {
-            setError(`Auth error ${err}`);
+            setError(`Registration error ${err}`);
         }
     }
 
@@ -45,10 +47,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 body: JSON.stringify({ email, password }),
                 credentials: 'include'
             });
-            console.log('Login successful:', response.json());
-            onClose();
+
+            if (response.ok) {
+                console.log('Login successful:');
+                onClose();
+            }
         } catch (err) {
-            setError(`Auth error ${err}`);
+            setError(`Login error ${err}`);
         }
     };
 
@@ -82,7 +87,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     </div>
 
                     {error && <p className="error">{error}</p>}
-                    <button type="submit" className="btn" onClick={handleSubmitLogin}>Login</button>
+                    <button type="submit" className="btn" onClick={handleSubmitLogin}>Login</button><br/>
                     <button type="submit" className="btn" onClick={handleSubmitRegistration}>Registration</button>
                 </form>
             </div>

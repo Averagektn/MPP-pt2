@@ -99,6 +99,7 @@ input[type=password] + label:after {
     border-radius: 2px;
     display: inline-block;
     height: 36px;
+    width: 175px;
     line-height: 36px;
     outline: 0;
     padding: 0 2rem;

@@ -129,6 +129,7 @@ const TaskList: React.FC = () => {
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': accessToken
+
                 },
                 body: JSON.stringify(taskData)
             });
@@ -281,7 +282,7 @@ const TaskList: React.FC = () => {
                 isOpen={isAuthModalOpen}
                 onClose={() => {
                     setIsAuthModalOpen(false);
-                    setIsValidAccessToken(false);
+                    setIsValidAccessToken(true);
                 }} />
             <section>
                 <div className="row">
