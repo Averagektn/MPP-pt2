@@ -12,10 +12,10 @@ class AuthController {
         }
 
         try {
-            const token = await authRepository.getRefreshToken(email, password);
+            const refreshToken = await authRepository.getRefreshToken(email, password);
 
             res.status(200)
-                .cookie('token', token, {
+                .cookie('token', refreshToken, {
                     httpOnly: true,
                     secure: false,
                     sameSite: 'strict',

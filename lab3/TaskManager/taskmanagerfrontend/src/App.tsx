@@ -11,9 +11,10 @@ const TaskList: React.FC = () => {
     const [tasks, setTasks] = useState<Task[]>([]); 
     const [currentPage, setCurrentPage] = useState(0);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-    const [isAuthorized, setIsAuthorized] = useState(false);
+    const [isValidAccessToken, setIsValidAccessToken] = useState(true);
     const [deleteTask, setDeleteTask] = useState<string>('');
     const [updateTask, setUpdateTask] = useState<Task | null>(null);
+    const [accessToken, setAccessToken] = useState<string>('');
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const selectFilterRef = useRef<HTMLSelectElement | null>(null);
@@ -31,8 +32,11 @@ const TaskList: React.FC = () => {
             }
         };
 
-        fetchTasks();
-    }, [isAuthorized, currentPage]);
+        if (isValidAccessToken) {
+            fetchTasks();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isValidAccessToken, currentPage]);
 
     useEffect(() => {
         const executeDelete = async () => {
@@ -49,17 +53,36 @@ const TaskList: React.FC = () => {
             }
         };
 
-        if (isAuthorized) {
+        const getNewToken = async () => {
+            const response = await fetch(`http://localhost:1337/auth/access`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                const token = response.headers.get('Authorization');
+                setAccessToken(token as string);
+                setIsValidAccessToken(true);
+            } else {
+                setIsAuthModalOpen(true);
+            }
+        }
+
+        if (isValidAccessToken) {
             executeDelete();
             executeUpdate();
+        } else {
+            getNewToken();
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isAuthorized]);
+    }, [isValidAccessToken]);
 
     const loadFilteredTasks = async (status: string, currentPage: number, limit: number, loadEmptyArray = false): Promise<void> => {
         const response = await fetch(`http://localhost:1337/tasks/filter?status=${status}&limit=${limit}&startWith=${currentPage}`, {
             method: 'GET',
-            credentials: 'include'
+            headers: {
+                'Authorization': accessToken
+            }
         });
 
         if (response.ok) {
@@ -69,8 +92,7 @@ const TaskList: React.FC = () => {
                 setTasks(newTasks);
             }
         } else if (response.status === 401) {
-            setIsAuthModalOpen(true);
-            setIsAuthorized(false);
+            setIsValidAccessToken(false);
         } else {
             console.error('Get error', response.statusText);
         }
@@ -95,7 +117,9 @@ const TaskList: React.FC = () => {
             const response = await fetch('http://localhost:1337/tasks/photo', {
                 method: 'POST',
                 body: formData,
-                credentials: 'include'
+                headers: {
+                    'Authorization': accessToken
+                }
             });
             const { photo } = await response.json();
             const taskData = new Task(taskName, taskDescription, null, null, null, photo);
@@ -104,9 +128,9 @@ const TaskList: React.FC = () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': accessToken
                 },
-                body: JSON.stringify(taskData),
-                credentials: 'include'
+                body: JSON.stringify(taskData)
             });
             const res = await taskResponse.json();
 
@@ -122,8 +146,7 @@ const TaskList: React.FC = () => {
                     fileInputRef.current.value = '';
                 }
             } else if (response.status === 401) {
-                setIsAuthModalOpen(true);
-                setIsAuthorized(false);
+                setIsValidAccessToken(false);
             } else {
                 console.error('Task add error:', taskResponse.statusText);
             }
@@ -133,22 +156,23 @@ const TaskList: React.FC = () => {
     };
 
     const handleDelete = async (taskId: string): Promise<void> => {
-        if (!isAuthorized) {
+        if (!isValidAccessToken) {
             setDeleteTask(taskId);
         }
 
         try {
             const response = await fetch(`http://localhost:1337/tasks/${taskId}`, {
                 method: 'DELETE',
-                credentials: 'include'
+                headers: {
+                    'Authorization': accessToken
+                }
             });
 
             if (response.ok) {
                 const status = selectFilterRef.current?.value;
                 await loadFilteredTasks(status!, currentPage, defLimit, true);
             } else if (response.status === 401) {
-                setIsAuthModalOpen(true);
-                setIsAuthorized(false);
+                setIsValidAccessToken(false);
             } else {
                 console.error('Delete error', response.statusText);
             }
@@ -158,7 +182,7 @@ const TaskList: React.FC = () => {
     };
 
     const handleUpdate = async (taskId: string, date: string, status: string): Promise<void> => {
-        if (!isAuthorized) {
+        if (!isValidAccessToken) {
             setUpdateTask(new Task('', '', status, taskId, date, null));
         }
 
@@ -167,9 +191,9 @@ const TaskList: React.FC = () => {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': accessToken
                 },
-                body: JSON.stringify({ date, status }), 
-                credentials: 'include'
+                body: JSON.stringify({ date, status })
             });
 
             if (response.ok) {
@@ -181,8 +205,7 @@ const TaskList: React.FC = () => {
                 );
                 alert('Updated');
             } else if (response.status === 401) {
-                setIsAuthModalOpen(true);
-                setIsAuthorized(false);
+                setIsValidAccessToken(false);
             } else {
                 console.error('Update error', response.statusText);
             }
@@ -195,7 +218,9 @@ const TaskList: React.FC = () => {
         try {
             const response = await fetch(`http://localhost:1337/tasks/pages?limit=${defLimit}`, {
                 method: 'GET',
-                credentials: 'include'
+                headers: {
+                    'Authorization': accessToken
+                }
             });
 
             if (response.ok) {
@@ -256,7 +281,7 @@ const TaskList: React.FC = () => {
                 isOpen={isAuthModalOpen}
                 onClose={() => {
                     setIsAuthModalOpen(false);
-                    setIsAuthorized(true);
+                    setIsValidAccessToken(false);
                 }} />
             <section>
                 <div className="row">

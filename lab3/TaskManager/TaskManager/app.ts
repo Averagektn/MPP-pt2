@@ -24,6 +24,7 @@ const corsOptions = cors({
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'], 
     credentials: true, 
     allowedHeaders: ['Content-Type', 'Authorization'], 
+    exposedHeaders: ['Authorization']
 });
 
 app.use(express.static(path.join(__dirname, 'public')));

@@ -12,12 +12,32 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     const [password, setPassword] = useState<string>('');
     const [error, setError] = useState<string>('');
 
-    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmitRegistration = async (event: React.FormEvent<HTMLButtonElement>) => {
         event.preventDefault();
         setError('');
 
         try {
-            const response = await fetch('http://localhost:1337/auth', {
+            const response = await fetch('http://localhost:1337/auth/users', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password }),
+            });
+            console.log('Registration successful:', response.json());
+
+            await handleSubmitLogin(event);
+        } catch (err) {
+            setError(`Auth error ${err}`);
+        }
+    }
+
+    const handleSubmitLogin = async (event: React.FormEvent<HTMLButtonElement>) => {
+        event.preventDefault();
+        setError('');
+
+        try {
+            const response = await fetch('http://localhost:1337/auth/refresh', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -40,7 +60,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         <div className="modal-overlay">
             <div className="modal-content">
                 <h2>Auth</h2>
-                <form onSubmit={handleSubmit}>
+                <form>
                     <div>
                         <label htmlFor="email">Email:</label><br />
                         <input
@@ -62,7 +82,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     </div>
 
                     {error && <p className="error">{error}</p>}
-                    <button type="submit" className="btn">Enter</button>
+                    <button type="submit" className="btn" onClick={handleSubmitLogin}>Login</button>
+                    <button type="submit" className="btn" onClick={handleSubmitRegistration}>Registration</button>
                 </form>
             </div>
         </div>
