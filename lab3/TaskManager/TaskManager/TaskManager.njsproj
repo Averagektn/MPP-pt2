@@ -42,6 +42,7 @@
     <Folder Include="model\" />
     <Folder Include="controllers\" />
     <Folder Include="middleware\" />
+    <Folder Include="services\" />
     <Folder Include="utils\" />
     <Folder Include="repositroies\" />
     <Folder Include="routes\" />
@@ -69,6 +70,12 @@
       <SubType>Code</SubType>
     </TypeScriptCompile>
     <TypeScriptCompile Include="repositroies\TaskRepository.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include="services\AuthService.ts">
+      <SubType>Code</SubType>
+    </TypeScriptCompile>
+    <TypeScriptCompile Include="utils\email_validation.ts">
       <SubType>Code</SubType>
     </TypeScriptCompile>
     <TypeScriptCompile Include="utils\file_name_generator.ts">

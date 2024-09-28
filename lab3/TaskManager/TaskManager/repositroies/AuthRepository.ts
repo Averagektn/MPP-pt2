@@ -13,14 +13,13 @@ class AuthRepository {
         this.auth = admin.auth();
     }
 
-    async getAccessToken(refreshToken: string, uid: string): Promise<string> {
+    async getCurrentRefreshToken(uid: string): Promise<string> {
         const tokenSnapshot = await this.db.ref(`tokens/${uid}`).get();
-        const dbRefreshToken: string = tokenSnapshot.val();
 
-        if (dbRefreshToken !== refreshToken) {
-            throw new Error('Token comparison error');
-        }
+        return tokenSnapshot.val();
+    }
 
+    async getAccessToken(uid: string): Promise<string> {
         const token = jwt.sign({ uid: uid }, SecretKeyAccess, { expiresIn: 3 * 60 });
 
         return token;
@@ -31,7 +30,7 @@ class AuthRepository {
 
         const uid = authUser.uid;
         const snapshot = await this.db.ref(`users/${uid}`).get();
-        let user;
+        let user: any;
         snapshot.forEach((childSnapshot) => {
             const data = childSnapshot.val();
             const id = childSnapshot.key;

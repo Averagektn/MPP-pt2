@@ -19,13 +19,14 @@ class AuthRepository {
         this.db = admin.database();
         this.auth = admin.auth();
     }
-    getAccessToken(refreshToken, uid) {
+    getCurrentRefreshToken(uid) {
         return __awaiter(this, void 0, void 0, function* () {
             const tokenSnapshot = yield this.db.ref(`tokens/${uid}`).get();
-            const dbRefreshToken = tokenSnapshot.val();
-            if (dbRefreshToken !== refreshToken) {
-                throw new Error('Token comparison error');
-            }
+            return tokenSnapshot.val();
+        });
+    }
+    getAccessToken(uid) {
+        return __awaiter(this, void 0, void 0, function* () {
             const token = jwt.sign({ uid: uid }, jwt_secret_key_access_1.default, { expiresIn: 3 * 60 });
             return token;
         });

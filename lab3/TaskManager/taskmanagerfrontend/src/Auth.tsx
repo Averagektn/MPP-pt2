@@ -27,7 +27,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             });
             if (response.ok) {
                 console.log('Registration successful:');
-                onClose();   
+                onClose();
+            } else {
+                setError('Registration error');
             }
         } catch (err) {
             setError(`Registration error ${err}`);
@@ -51,6 +53,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             if (response.ok) {
                 console.log('Login successful:');
                 onClose();
+            } else {
+                setError('Login error');
             }
         } catch (err) {
             setError(`Login error ${err}`);

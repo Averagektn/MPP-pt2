@@ -1,5 +1,5 @@
 import express = require('express');
-import authRepository from '../repositroies/AuthRepository';
+import authService from '../services/AuthService';
 import jwt = require('jsonwebtoken');
 
 class AuthController {
@@ -12,9 +12,9 @@ class AuthController {
         }
 
         try {
-            const refreshToken = await authRepository.getRefreshToken(email, password);
-            const uid = await authRepository.getUidByEmail(email);
-            const accessToken = await authRepository.getAccessToken(refreshToken, uid);
+            const refreshToken = await authService.getRefreshToken(email, password);
+            const uid = await authService.getUidByEmail(email);
+            const accessToken = await authService.getAccessToken(refreshToken, uid);
 
             res.status(200)
                 .header('Authorization', `Bearer ${accessToken}`)
@@ -34,7 +34,7 @@ class AuthController {
         const { uid } = jwt.decode(token) as jwt.JwtPayload;
 
         try {
-            const accessToken = await authRepository.getAccessToken(token, uid);
+            const accessToken = await authService.getAccessToken(token, uid);
 
             res.status(200)
                 .header('Authorization', `Bearer ${accessToken}`)
@@ -48,11 +48,11 @@ class AuthController {
         const { email, password } = req.body;
 
         try {
-            await authRepository.createUser(email, password);
+            await authService.createUser(email, password);
 
-            const refreshToken = await authRepository.getRefreshToken(email, password);
-            const uid = await authRepository.getUidByEmail(email);
-            const accessToken = await authRepository.getAccessToken(refreshToken, uid);
+            const refreshToken = await authService.getRefreshToken(email, password);
+            const uid = await authService.getUidByEmail(email);
+            const accessToken = await authService.getAccessToken(refreshToken, uid);
 
             res.status(201)
                 .header('Authorization', `Bearer ${accessToken}`)

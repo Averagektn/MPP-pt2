@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const AuthRepository_1 = require("../repositroies/AuthRepository");
+const AuthService_1 = require("../services/AuthService");
 const jwt = require("jsonwebtoken");
 class AuthController {
     getRefreshToken(req, res) {
@@ -20,9 +20,9 @@ class AuthController {
                 return;
             }
             try {
-                const refreshToken = yield AuthRepository_1.default.getRefreshToken(email, password);
-                const uid = yield AuthRepository_1.default.getUidByEmail(email);
-                const accessToken = yield AuthRepository_1.default.getAccessToken(refreshToken, uid);
+                const refreshToken = yield AuthService_1.default.getRefreshToken(email, password);
+                const uid = yield AuthService_1.default.getUidByEmail(email);
+                const accessToken = yield AuthService_1.default.getAccessToken(refreshToken, uid);
                 res.status(200)
                     .header('Authorization', `Bearer ${accessToken}`)
                     .cookie('token', refreshToken, {
@@ -42,7 +42,7 @@ class AuthController {
             const token = req.cookies.token;
             const { uid } = jwt.decode(token);
             try {
-                const accessToken = yield AuthRepository_1.default.getAccessToken(token, uid);
+                const accessToken = yield AuthService_1.default.getAccessToken(token, uid);
                 res.status(200)
                     .header('Authorization', `Bearer ${accessToken}`)
                     .send();
@@ -56,10 +56,10 @@ class AuthController {
         return __awaiter(this, void 0, void 0, function* () {
             const { email, password } = req.body;
             try {
-                yield AuthRepository_1.default.createUser(email, password);
-                const refreshToken = yield AuthRepository_1.default.getRefreshToken(email, password);
-                const uid = yield AuthRepository_1.default.getUidByEmail(email);
-                const accessToken = yield AuthRepository_1.default.getAccessToken(refreshToken, uid);
+                yield AuthService_1.default.createUser(email, password);
+                const refreshToken = yield AuthService_1.default.getRefreshToken(email, password);
+                const uid = yield AuthService_1.default.getUidByEmail(email);
+                const accessToken = yield AuthService_1.default.getAccessToken(refreshToken, uid);
                 res.status(201)
                     .header('Authorization', `Bearer ${accessToken}`)
                     .cookie('token', refreshToken, {
