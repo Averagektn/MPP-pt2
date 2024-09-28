@@ -1,0 +1,21 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express = require("express");
+const multer = require("multer");
+const TaskController_1 = require("../controllers/TaskController");
+const AuthController_1 = require("../controllers/AuthController");
+const router = express.Router();
+const upload = multer();
+router.post('/tasks', TaskController_1.default.createTask);
+router.post('/tasks/photo', upload.single('file'), TaskController_1.default.uploadFile);
+router.patch('/tasks/:id', TaskController_1.default.updateTask);
+router.delete('/tasks/:id', TaskController_1.default.deleteTask);
+router.get('/tasks/filter', TaskController_1.default.filterTasks);
+router.get('/tasks', TaskController_1.default.getTasks);
+router.get('/tasks/pages', TaskController_1.default.getTotalPages);
+router.get('/tasks/:id', TaskController_1.default.getTaskById);
+router.post('/auth/users', AuthController_1.default.createUser);
+router.post('/auth/access', AuthController_1.default.getAccessToken);
+router.post('/auth/refresh', AuthController_1.default.getRefreshToken);
+exports.default = router;
+//# sourceMappingURL=index.js.map
