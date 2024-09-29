@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import '../public/stylesheets/main.css'
+import '../stylesheets/main.css'
 import React from 'react'
 
 interface AuthModalProps {

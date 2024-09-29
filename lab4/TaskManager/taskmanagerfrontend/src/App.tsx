@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import '../public/stylesheets/main.css'
+import '../stylesheets/main.css'
 import React from 'react'
 import Task from '../model/Task'
 import AuthModal from './Auth';
