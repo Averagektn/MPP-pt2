@@ -15,7 +15,10 @@ const jwt_secret_key_access_1 = require("../config/jwt_secret_key_access");
 const jwt_secret_key_refresh_1 = require("../config/jwt_secret_key_refresh");
 function validateJwt(req) {
     return __awaiter(this, void 0, void 0, function* () {
-        if (req.path.startsWith('/tasks')) {
+        if (!req.path) {
+            return false;
+        }
+        if (req.path.startsWith('tasks')) {
             try {
                 const token = req.accessToken;
                 if (!token) {
@@ -29,7 +32,7 @@ function validateJwt(req) {
                 return false;
             }
         }
-        else if (req.path.startsWith('/auth/access')) {
+        else if (req.path.startsWith('users/access')) {
             const token = req.refreshToken;
             if (!token) {
                 return false;

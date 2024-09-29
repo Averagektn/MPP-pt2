@@ -10,9 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express = require("express");
-const AuthMiddleware_1 = require("./middleware/AuthMiddleware");
 const socket_io_1 = require("socket.io");
-const TaskController_1 = require("./controllers/TaskController");
 const admin = require("firebase-admin");
 const jwt = require("jsonwebtoken");
 const WsResponse_1 = require("./model/WsResponse");
@@ -23,85 +21,105 @@ admin.initializeApp({
     databaseURL: "https://taskmanager-dedf9-default-rtdb.europe-west1.firebasedatabase.app",
     storageBucket: "taskmanager-dedf9.appspot.com"
 });
+const AuthMiddleware_1 = require("./middleware/AuthMiddleware");
+const TaskController_1 = require("./controllers/TaskController");
+const AuthController_1 = require("./controllers/AuthController");
 const app = express();
 const server = http.createServer(app);
 const io = new socket_io_1.Server(server);
 io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
+    const withAuthorization = (endpoint, data, getWsResponseCallback) => __awaiter(void 0, void 0, void 0, function* () {
+        data.path = endpoint;
+        try {
+            if (yield (0, AuthMiddleware_1.default)(data)) {
+                const response = yield getWsResponseCallback(data);
+                socket.emit(endpoint, JSON.stringify(response));
+            }
+            else {
+                socket.emit(endpoint, JSON.stringify(new WsResponse_1.default(401, null)));
+            }
+        }
+        catch (err) {
+            socket.emit(endpoint, JSON.stringify(new WsResponse_1.default(400, err)));
+        }
+    });
     socket.on('message', (data) => __awaiter(void 0, void 0, void 0, function* () {
-        console.log('User sent:', data);
-        socket.emit('message/feedback', JSON.stringify(data));
+        yield withAuthorization('message', data, (req) => __awaiter(void 0, void 0, void 0, function* () {
+            console.log('User sent:', req);
+            return new WsResponse_1.default(200, req.data);
+        }));
     }));
     socket.on('tasks/create', (data) => __awaiter(void 0, void 0, void 0, function* () {
-        if (yield (0, AuthMiddleware_1.default)(data)) {
-            const { uid } = jwt.decode(data.accessToken);
-            const res = yield TaskController_1.default.createTask(data.data, uid);
-            socket.emit('tasks/created', JSON.stringify(res));
-        }
-        else {
-            socket.emit('tasks/created', JSON.stringify(new WsResponse_1.default(400, null)));
-        }
+        yield withAuthorization('tasks/create', data, (req) => __awaiter(void 0, void 0, void 0, function* () {
+            const { uid } = jwt.decode(req.accessToken);
+            return yield TaskController_1.default.createTask(req.data, uid);
+        }));
     }));
     socket.on('tasks/file/upload', (data) => __awaiter(void 0, void 0, void 0, function* () {
-        if (yield (0, AuthMiddleware_1.default)(data)) {
-            const result = yield TaskController_1.default.uploadFile(data.data);
-            socket.emit('tasks/file/uploaded', result);
-        }
-        else {
-            socket.emit('tasks/file/upload', JSON.stringify(new WsResponse_1.default(400, null)));
-        }
+        yield withAuthorization('tasks/file/upload', data, (req) => __awaiter(void 0, void 0, void 0, function* () {
+            return yield TaskController_1.default.uploadFile(req.data);
+        }));
     }));
-    socket.on('updateTask', (data) => __awaiter(void 0, void 0, void 0, function* () {
-        //const result = await taskController.updateTask(taskId, data);
-        const result = { name: 'a', description: 'b', photo: 'c' };
-        socket.emit('taskUpdated', result);
+    socket.on('tasks/update', (data) => __awaiter(void 0, void 0, void 0, function* () {
+        yield withAuthorization('tasks/update', data, (req) => __awaiter(void 0, void 0, void 0, function* () {
+            const { uid } = jwt.decode(req.accessToken);
+            return yield TaskController_1.default.updateTask(req.data, uid);
+        }));
     }));
-    socket.on('deleteTask', (data) => __awaiter(void 0, void 0, void 0, function* () {
-        //const result = await taskController.deleteTask(taskId);
-        const result = { name: 'a', description: 'b', photo: 'c' };
-        socket.emit('taskDeleted', result);
+    socket.on('tasks/delete', (data) => __awaiter(void 0, void 0, void 0, function* () {
+        yield withAuthorization('tasks/delete', data, (req) => __awaiter(void 0, void 0, void 0, function* () {
+            const { uid } = jwt.decode(req.accessToken);
+            return yield TaskController_1.default.deleteTask(req.data, uid);
+        }));
     }));
-    socket.on('filterTasks', (data) => __awaiter(void 0, void 0, void 0, function* () {
-        //const result = await taskController.filterTasks(filter);
-        const result = { name: 'a', description: 'b', photo: 'c' };
-        socket.emit('tasksFiltered', result);
+    socket.on('tasks/filter', (data) => __awaiter(void 0, void 0, void 0, function* () {
+        yield withAuthorization('tasks/filter', data, (req) => __awaiter(void 0, void 0, void 0, function* () {
+            const { uid } = jwt.decode(req.accessToken);
+            return yield TaskController_1.default.filterTasks(uid, req.data.status, req.data.limit, req.data.startWith);
+        }));
     }));
-    socket.on('getTasks', (data) => __awaiter(void 0, void 0, void 0, function* () {
-        //const result = await taskController.getTasks();
-        const result = { name: 'a', description: 'b', photo: 'c' };
-        socket.emit('tasksFetched', result);
+    socket.on('tasks', (data) => __awaiter(void 0, void 0, void 0, function* () {
+        yield withAuthorization('tasks', data, (req) => __awaiter(void 0, void 0, void 0, function* () {
+            var _a, _b;
+            const { uid } = jwt.decode(req.accessToken);
+            return yield TaskController_1.default.getTasks(uid, (_a = req.data.limit) !== null && _a !== void 0 ? _a : 8, (_b = req.data.startWith) !== null && _b !== void 0 ? _b : 0);
+        }));
     }));
-    socket.on('getTotalPages', (data) => __awaiter(void 0, void 0, void 0, function* () {
-        //const result = await taskController.getTotalPages();
-        const result = { name: 'a', description: 'b', photo: 'c' };
-        socket.emit('totalPagesFetched', result);
+    socket.on('tasks/pages', (data) => __awaiter(void 0, void 0, void 0, function* () {
+        yield withAuthorization('tasks/pages', data, (req) => __awaiter(void 0, void 0, void 0, function* () {
+            var _c;
+            const { uid } = jwt.decode(req.accessToken);
+            return yield TaskController_1.default.getTotalPages((_c = req.data) !== null && _c !== void 0 ? _c : 8, uid);
+        }));
     }));
-    socket.on('getTaskById', (data) => __awaiter(void 0, void 0, void 0, function* () {
-        //const result = await taskController.getTaskById(taskId);
-        const result = { name: 'a', description: 'b', photo: 'c' };
-        socket.emit('taskFetched', result);
+    socket.on('tasks/id', (data) => __awaiter(void 0, void 0, void 0, function* () {
+        yield withAuthorization('tasks/id', data, (req) => __awaiter(void 0, void 0, void 0, function* () {
+            const { uid } = jwt.decode(req.accessToken);
+            return yield TaskController_1.default.getTaskById(uid, req.data);
+        }));
     }));
-    socket.on('createUser', (data) => __awaiter(void 0, void 0, void 0, function* () {
-        //const result = await authController.createUser(data);
-        const result = { name: 'a', description: 'b', photo: 'c' };
-        socket.emit('userCreated', result);
+    socket.on('users/create', (data) => __awaiter(void 0, void 0, void 0, function* () {
+        yield withAuthorization('users/create', data, (req) => __awaiter(void 0, void 0, void 0, function* () {
+            return yield AuthController_1.default.createUser(req.data.email, req.data.password);
+        }));
     }));
-    socket.on('getAccessToken', (data) => __awaiter(void 0, void 0, void 0, function* () {
-        //const result = await authController.getAccessToken(credentials);
-        const result = { name: 'a', description: 'b', photo: 'c' };
-        socket.emit('accessTokenFetched', result);
+    socket.on('users/access', (data) => __awaiter(void 0, void 0, void 0, function* () {
+        yield withAuthorization('users/access', data, (req) => __awaiter(void 0, void 0, void 0, function* () {
+            return yield AuthController_1.default.getAccessToken(req.refreshToken);
+        }));
     }));
-    socket.on('getRefreshToken', (data) => __awaiter(void 0, void 0, void 0, function* () {
-        //const result = await authController.getRefreshToken(token);
-        const result = { name: 'a', description: 'b', photo: 'c' };
-        socket.emit('refreshTokenFetched', result);
+    socket.on('users/refresh', (data) => __awaiter(void 0, void 0, void 0, function* () {
+        yield withAuthorization('users/refresh', data, (req) => __awaiter(void 0, void 0, void 0, function* () {
+            return yield AuthController_1.default.getRefreshToken(req.data.email, req.data.password);
+        }));
     }));
     socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);
     });
 });
-const PORT = 1337;
-server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+const port = 1337;
+server.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
 });
 //# sourceMappingURL=app.js.map

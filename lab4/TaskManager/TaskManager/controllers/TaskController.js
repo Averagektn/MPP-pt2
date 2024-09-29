@@ -39,11 +39,11 @@ class TaskController {
             }
         });
     }
-    updateTask(taskId, task, uid) {
+    updateTask(task, uid) {
         var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                task = yield TaskRepository_1.default.updateTask(taskId, (_a = task.date) !== null && _a !== void 0 ? _a : null, (_b = task.status) !== null && _b !== void 0 ? _b : null, uid);
+                task = yield TaskRepository_1.default.updateTask(task.id, (_a = task.date) !== null && _a !== void 0 ? _a : null, (_b = task.status) !== null && _b !== void 0 ? _b : null, uid);
                 return new WsResponse_1.default(200, task);
             }
             catch (err) {

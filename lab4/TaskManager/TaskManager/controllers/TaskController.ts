@@ -27,9 +27,9 @@ class TaskController {
         }
     }
 
-    async updateTask(taskId: string, task: Task, uid: string): Promise<WsResponse> {
+    async updateTask(task: Task, uid: string): Promise<WsResponse> {
         try {
-            task = await taskRepository.updateTask(taskId, task.date ?? null, task.status ?? null, uid);
+            task = await taskRepository.updateTask(task.id, task.date ?? null, task.status ?? null, uid);
             return new WsResponse(200, task);
         } catch (err) {
             console.error('Error:', err);

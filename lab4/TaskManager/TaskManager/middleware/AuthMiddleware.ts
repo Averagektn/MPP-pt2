@@ -5,7 +5,11 @@ import SecretKeyRefresh from '../config/jwt_secret_key_refresh';
 import WsRequest from '../model/WsRequest';
 
 export default async function validateJwt(req: WsRequest): Promise<boolean> {
-    if (req.path.startsWith('/tasks')) {
+    if (!req.path) {
+        return false;
+    }
+
+    if (req.path.startsWith('tasks')) {
         try {
             const token = req.accessToken;
 
@@ -19,7 +23,7 @@ export default async function validateJwt(req: WsRequest): Promise<boolean> {
             console.error('Error verifying token:', error);
             return false;
         }
-    } else if (req.path.startsWith('/auth/access')) {
+    } else if (req.path.startsWith('users/access')) {
         const token = req.refreshToken;
 
         if (!token) {

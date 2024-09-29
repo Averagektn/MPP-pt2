@@ -9,8 +9,8 @@ class AuthController {
 
         try {
             const refreshToken = await authService.getRefreshToken(email, password);
-            const uid = await authService.getUidByEmail(email);
-            const accessToken = await authService.getAccessToken(refreshToken, uid);
+            await authService.getUidByEmail(email);
+            const accessToken = await authService.getAccessToken(refreshToken)
 
             return new WsResponse(200, { refreshToken, accessToken });
         } catch (err) {
@@ -18,9 +18,9 @@ class AuthController {
         }
     }
 
-    async getAccessToken(uid: string, refreshToken: string): Promise<WsResponse> {
+    async getAccessToken(refreshToken: string): Promise<WsResponse> {
         try {
-            const accessToken = await authService.getAccessToken(refreshToken, uid);
+            const accessToken = await authService.getAccessToken(refreshToken);
 
             return new WsResponse(200, { accessToken });
         } catch (err) {
@@ -34,7 +34,7 @@ class AuthController {
 
             const refreshToken = await authService.getRefreshToken(email, password);
             const uid = await authService.getUidByEmail(email);
-            const accessToken = await authService.getAccessToken(refreshToken, uid);
+            const accessToken = await authService.getAccessToken(refreshToken);
 
             return new WsResponse(201, { refreshToken, accessToken });
         } catch (err) {

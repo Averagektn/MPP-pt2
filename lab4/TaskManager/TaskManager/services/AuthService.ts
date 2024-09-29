@@ -1,8 +1,10 @@
 import authRepository from "../repositroies/AuthRepository";
 import validateEmail from "../utils/email_validation";
+import jwt = require('jsonwebtoken');
 
 class AuthService {
-    async getAccessToken(refreshToken: string, uid: string): Promise<string> {
+    async getAccessToken(refreshToken: string): Promise<string> {
+        const { uid } = jwt.decode(refreshToken) as jwt.JwtPayload;
         const dbRefreshToken = await authRepository.getCurrentRefreshToken(uid);
 
         if (dbRefreshToken !== refreshToken) {

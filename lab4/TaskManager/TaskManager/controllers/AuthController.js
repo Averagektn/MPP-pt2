@@ -19,8 +19,8 @@ class AuthController {
             }
             try {
                 const refreshToken = yield AuthService_1.default.getRefreshToken(email, password);
-                const uid = yield AuthService_1.default.getUidByEmail(email);
-                const accessToken = yield AuthService_1.default.getAccessToken(refreshToken, uid);
+                yield AuthService_1.default.getUidByEmail(email);
+                const accessToken = yield AuthService_1.default.getAccessToken(refreshToken);
                 return new WsResponse_1.default(200, { refreshToken, accessToken });
             }
             catch (err) {
@@ -28,10 +28,10 @@ class AuthController {
             }
         });
     }
-    getAccessToken(uid, refreshToken) {
+    getAccessToken(refreshToken) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const accessToken = yield AuthService_1.default.getAccessToken(refreshToken, uid);
+                const accessToken = yield AuthService_1.default.getAccessToken(refreshToken);
                 return new WsResponse_1.default(200, { accessToken });
             }
             catch (err) {
@@ -45,7 +45,7 @@ class AuthController {
                 yield AuthService_1.default.createUser(email, password);
                 const refreshToken = yield AuthService_1.default.getRefreshToken(email, password);
                 const uid = yield AuthService_1.default.getUidByEmail(email);
-                const accessToken = yield AuthService_1.default.getAccessToken(refreshToken, uid);
+                const accessToken = yield AuthService_1.default.getAccessToken(refreshToken);
                 return new WsResponse_1.default(201, { refreshToken, accessToken });
             }
             catch (err) {

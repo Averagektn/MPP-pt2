@@ -11,9 +11,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const AuthRepository_1 = require("../repositroies/AuthRepository");
 const email_validation_1 = require("../utils/email_validation");
+const jwt = require("jsonwebtoken");
 class AuthService {
-    getAccessToken(refreshToken, uid) {
+    getAccessToken(refreshToken) {
         return __awaiter(this, void 0, void 0, function* () {
+            const { uid } = jwt.decode(refreshToken);
             const dbRefreshToken = yield AuthRepository_1.default.getCurrentRefreshToken(uid);
             if (dbRefreshToken !== refreshToken) {
                 throw new Error('Token comparison error');
