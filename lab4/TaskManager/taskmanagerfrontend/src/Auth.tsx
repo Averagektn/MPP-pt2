@@ -16,19 +16,22 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     const [error, setError] = useState<string>('');
 
     const socket = io('http://localhost:1337');
-    socket.on('users/refresh', (response: WsResponse) => {
-        if (response.status >= 200 && response.status < 300) {
-            localStorage.setItem('refreshJwt', response.data.refreshToken);
-            onClose(response.data.accessToken);
+    socket.on('users/refresh', (res) => {
+        const data: WsResponse = JSON.parse(res);
+
+        if (data.status >= 200 && data.status < 300) {
+            localStorage.setItem('refreshJwt', data.data.refreshToken);
+            onClose(data.data.accessToken);
         } else {
             setError('Login error');
         }
     });
+    socket.on('users/create', (res) => {
+        const data: WsResponse = JSON.parse(res);
 
-    socket.on('users/create', (response: WsResponse) => {
-        if (response.status >= 200 && response.status < 300) {
-            localStorage.setItem('refreshJwt', response.data.refreshToken);
-            onClose(response.data.accessToken);
+        if (data.status >= 200 && data.status < 300) {
+            localStorage.setItem('refreshJwt', data.data.refreshToken);
+            onClose(data.data.accessToken);
         } else {
             setError('Registration error');
         }

@@ -12,7 +12,7 @@ const TaskList: React.FC = () => {
     const [tasks, setTasks] = useState<Task[]>([]); 
     const [currentPage, setCurrentPage] = useState(0);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-    const [isValidAccessToken, setIsValidAccessToken] = useState(true);
+    const [isValidAccessToken, setIsValidAccessToken] = useState(false);
     const [deleteTask, setDeleteTask] = useState<string>('');
     const [updateTask, setUpdateTask] = useState<Task | null>(null);
     const [accessToken, setAccessToken] = useState<string>('');
@@ -20,27 +20,30 @@ const TaskList: React.FC = () => {
     const selectFilterRef = useRef<HTMLSelectElement | null>(null);
 
     const socket = io('http://localhost:1337');
-    socket.on('users/access', (response: WsResponse) => {
-        if (response.status >= 200 && response.status < 300) {
-            setAccessToken(response.data.accessToken);
+    socket.on('users/access', (res) => {
+        const data: WsResponse = JSON.parse(res);
+
+        if (data.status >= 200 && data.status < 300) {
+            setAccessToken(data.data.accessToken);
             setIsValidAccessToken(true);
         } else {
             setIsAuthModalOpen(true);
         }
     });
+    socket.on('tasks/filter', (res) => {
+        const data: WsResponse = JSON.parse(res);
 
-    socket.on('tasks/filter', (response: WsResponse) => {
-        if (response.status >= 200 && response.status < 300) {
-            console.log(response.data);
-            const newTasks = JSON.parse(response.data);
-            //if (newTasks.length > 0) {
+        if (data.status >= 200 && data.status < 300) {
+            console.log(data.data);
+            const newTasks = JSON.parse(data.data);
+            if (newTasks.length > 0) {
                 setCurrentPage(currentPage);
                 setTasks(newTasks);
-            //}
-        } else if (response.status === 401) {
+            }
+        } else if (data.status === 401) {
             setIsValidAccessToken(false);
         } else {
-            console.error('Get error', response.message);
+            console.error('Get error', data.message);
         }
     })
 

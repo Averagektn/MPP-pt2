@@ -14,7 +14,6 @@ const socket_io_1 = require("socket.io");
 const admin = require("firebase-admin");
 const jwt = require("jsonwebtoken");
 const WsResponse_1 = require("./model/WsResponse");
-const cors = require('cors');
 const http = require('http');
 const serviceAccount = require("./config/taskmanager-dedf9-firebase-adminsdk-uia8o-f0091c57e0.json");
 admin.initializeApp({
@@ -26,14 +25,6 @@ const AuthMiddleware_1 = require("./middleware/AuthMiddleware");
 const TaskController_1 = require("./controllers/TaskController");
 const AuthController_1 = require("./controllers/AuthController");
 const app = express();
-const corsOptions = cors({
-    origin: 'http://localhost:5173',
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type'],
-    credentials: true
-});
-app.use(corsOptions);
-app.options('*', corsOptions);
 const server = http.createServer(app);
 const io = new socket_io_1.Server(server, {
     cors: {
@@ -42,8 +33,8 @@ const io = new socket_io_1.Server(server, {
     }
 });
 io.on('connection', (socket) => {
-    console.log('A user connected:', socket.id);
-    const withAuthorization = (endpoint, data, getWsResponseCallback) => __awaiter(void 0, void 0, void 0, function* () {
+    const withAuthorization = (endpoint, req, getWsResponseCallback) => __awaiter(void 0, void 0, void 0, function* () {
+        const data = JSON.parse(req);
         data.path = endpoint;
         try {
             if (yield (0, AuthMiddleware_1.default)(data)) {
@@ -128,9 +119,6 @@ io.on('connection', (socket) => {
             return yield AuthController_1.default.getRefreshToken(req.data.email, req.data.password);
         }));
     }));
-    socket.on('disconnect', () => {
-        console.log('User disconnected:', socket.id);
-    });
 });
 const port = 1337;
 server.listen(port, () => {

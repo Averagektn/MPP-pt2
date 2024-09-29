@@ -5,7 +5,6 @@ import jwt = require('jsonwebtoken');
 import WsRequest from './model/WsRequest';
 import WsResponse from './model/WsResponse';
 
-const cors = require('cors');
 const http = require('http');
 const serviceAccount = require("./config/taskmanager-dedf9-firebase-adminsdk-uia8o-f0091c57e0.json");
 admin.initializeApp({
@@ -19,16 +18,6 @@ import taskController from './controllers/TaskController';
 import authController from './controllers/AuthController';
 
 const app = express();
-const corsOptions = cors({
-    origin: 'http://localhost:5173', 
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
-    allowedHeaders: ['Content-Type'], 
-    credentials: true 
-});
-
-app.use(corsOptions);
-app.options('*', corsOptions);
-
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
@@ -40,9 +29,8 @@ const io = new Server(server, {
 type AsyncCallback = (data: WsRequest) => Promise<WsResponse>;
 
 io.on('connection', (socket) => {
-    console.log('A user connected:', socket.id);
-
-    const withAuthorization = async (endpoint: string, data: WsRequest, getWsResponseCallback: AsyncCallback): Promise<void> => {
+    const withAuthorization = async (endpoint: string, req: any, getWsResponseCallback: AsyncCallback): Promise<void> => {
+        const data: WsRequest = JSON.parse(req);
         data.path = endpoint;
 
         try {
@@ -58,88 +46,84 @@ io.on('connection', (socket) => {
         }
     };
 
-    socket.on('message', async (data: WsRequest) => {
+    socket.on('message', async (data) => {
         await withAuthorization('message', data, async (req: WsRequest) => {
             console.log('User sent:', req);
             return new WsResponse(200, req.data);
         });
     });
 
-    socket.on('tasks/create', async (data: WsRequest) => {
+    socket.on('tasks/create', async (data) => {
         await withAuthorization('tasks/create', data, async (req) => {
             const { uid } = jwt.decode(req.accessToken) as jwt.JwtPayload;
             return await taskController.createTask(req.data, uid)
         });
     });
 
-    socket.on('tasks/file/upload', async (data: WsRequest) => {
+    socket.on('tasks/file/upload', async (data) => {
         await withAuthorization('tasks/file/upload', data, async (req) => {
             return await taskController.uploadFile(req.data);
         });
     });
 
-    socket.on('tasks/update', async (data: WsRequest) => {
+    socket.on('tasks/update', async (data) => {
         await withAuthorization('tasks/update', data, async (req) => {
             const { uid } = jwt.decode(req.accessToken) as jwt.JwtPayload;
             return await taskController.updateTask(req.data, uid);
         })
     });
 
-    socket.on('tasks/delete', async (data: WsRequest) => {
+    socket.on('tasks/delete', async (data) => {
         await withAuthorization('tasks/delete', data, async (req) => {
             const { uid } = jwt.decode(req.accessToken) as jwt.JwtPayload;
             return await taskController.deleteTask(req.data, uid);
         });
     });
 
-    socket.on('tasks/filter', async (data: WsRequest) => {
+    socket.on('tasks/filter', async (data) => {
         await withAuthorization('tasks/filter', data, async (req) => {
             const { uid } = jwt.decode(req.accessToken) as jwt.JwtPayload;
             return await taskController.filterTasks(uid, req.data.status, req.data.limit, req.data.startWith);
         });
     });
 
-    socket.on('tasks', async (data: WsRequest) => {
+    socket.on('tasks', async (data) => {
         await withAuthorization('tasks', data, async (req) => {
             const { uid } = jwt.decode(req.accessToken) as jwt.JwtPayload;
             return await taskController.getTasks(uid, req.data.limit ?? 8, req.data.startWith ?? 0);
         });
     });
 
-    socket.on('tasks/pages', async (data: WsRequest) => {
+    socket.on('tasks/pages', async (data) => {
         await withAuthorization('tasks/pages', data, async (req) => {
             const { uid } = jwt.decode(req.accessToken) as jwt.JwtPayload;
             return await taskController.getTotalPages(req.data ?? 8, uid);
         });
     });
 
-    socket.on('tasks/id', async (data: WsRequest) => {
+    socket.on('tasks/id', async (data) => {
         await withAuthorization('tasks/id', data, async (req) => {
             const { uid } = jwt.decode(req.accessToken) as jwt.JwtPayload;
             return await taskController.getTaskById(uid, req.data);
         });
     });
 
-    socket.on('users/create', async (data: WsRequest) => {
+    socket.on('users/create', async (data) => {
         await withAuthorization('users/create', data, async (req) => {
             return await authController.createUser(req.data.email, req.data.password);
         });
     });
 
-    socket.on('users/access', async (data: WsRequest) => {
+    socket.on('users/access', async (data) => {
         await withAuthorization('users/access', data, async (req) => {
             return await authController.getAccessToken(req.refreshToken)
         });
     });
 
-    socket.on('users/refresh', async (data: WsRequest) => {
+    socket.on('users/refresh', async (data) => {
         await withAuthorization('users/refresh', data, async (req) => {
             return await authController.getRefreshToken(req.data.email, req.data.password);
         });
-    });
-
-    socket.on('disconnect', () => {
-        console.log('User disconnected:', socket.id);
     });
 });
 
