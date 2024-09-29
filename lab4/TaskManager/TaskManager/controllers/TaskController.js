@@ -118,6 +118,9 @@ class TaskController {
             }
             try {
                 let tasks = yield TaskRepository_1.default.getTasks(uid);
+                if (startWith >= tasks.length) {
+                    return new WsResponse_1.default(404, null);
+                }
                 if (tasks.length < (startWith + 1) * limit) {
                     tasks = tasks.slice(startWith * limit);
                 }

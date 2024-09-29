@@ -17,7 +17,7 @@ class TaskController {
         }
     }
 
-    async uploadFile(file: File): Promise<WsResponse> {
+    async uploadFile(file: any): Promise<WsResponse> {
         try {
             const photo = await taskRepository.uploadFile(file);
             return new WsResponse(201, photo);
@@ -104,6 +104,10 @@ class TaskController {
 
         try {
             let tasks = await taskRepository.getTasks(uid);
+            if (startWith >= tasks.length) {
+                return new WsResponse(404, null);
+            }
+
             if (tasks.length < (startWith + 1) * limit) {
                 tasks = tasks.slice(startWith * limit);
             } else {

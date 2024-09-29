@@ -54,29 +54,48 @@ io.on('connection', (socket) => {
     });
 
     socket.on('tasks/create', async (data) => {
-        await withAuthorization('tasks/create', data, async (req) => {
-            const { uid } = jwt.decode(req.accessToken) as jwt.JwtPayload;
-            return await taskController.createTask(req.data, uid)
-        });
-    });
+        data.path = 'tasks/create';
 
-    socket.on('tasks/file/upload', async (data) => {
-        await withAuthorization('tasks/file/upload', data, async (req) => {
-            return await taskController.uploadFile(req.data);
-        });
+        try {
+            if (await authorize(data)) {
+                const { uid } = jwt.decode(data.accessToken) as jwt.JwtPayload;
+
+                const buffer = Buffer.from(data.file.buffer);
+                const file = {
+                    originalname: data.file.name,
+                    mimetype: data.file.type,
+                    buffer: buffer,
+                };
+                const photo = (await taskController.uploadFile(file)).data;
+                const task = data.task;
+                task.photo = photo;
+
+                const response = await taskController.createTask(task, uid);
+
+                socket.emit('tasks/create', JSON.stringify(response));
+            } else {
+                socket.emit('tasks/create', JSON.stringify(new WsResponse(401, null)));
+            }
+        } catch (err) {
+            socket.emit('tasks/create', JSON.stringify(new WsResponse(400, err)));
+        }
     });
 
     socket.on('tasks/update', async (data) => {
-        await withAuthorization('tasks/update', data, async (req) => {
+        await withAuthorization('tasks/filter', data, async (req) => {
             const { uid } = jwt.decode(req.accessToken) as jwt.JwtPayload;
-            return await taskController.updateTask(req.data, uid);
+            await taskController.updateTask(req.data.task, uid);
+
+            return await taskController.filterTasks(uid, req.data.status, req.data.limit, req.data.startWith);
         })
     });
 
     socket.on('tasks/delete', async (data) => {
-        await withAuthorization('tasks/delete', data, async (req) => {
+        await withAuthorization('tasks/filter', data, async (req) => {
             const { uid } = jwt.decode(req.accessToken) as jwt.JwtPayload;
-            return await taskController.deleteTask(req.data, uid);
+            await taskController.deleteTask(req.data.taskId, uid);
+
+            return await taskController.filterTasks(uid, req.data.status, req.data.limit, req.data.startWith);
         });
     });
 

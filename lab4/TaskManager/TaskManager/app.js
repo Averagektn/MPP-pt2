@@ -56,26 +56,42 @@ io.on('connection', (socket) => {
         }));
     }));
     socket.on('tasks/create', (data) => __awaiter(void 0, void 0, void 0, function* () {
-        yield withAuthorization('tasks/create', data, (req) => __awaiter(void 0, void 0, void 0, function* () {
-            const { uid } = jwt.decode(req.accessToken);
-            return yield TaskController_1.default.createTask(req.data, uid);
-        }));
-    }));
-    socket.on('tasks/file/upload', (data) => __awaiter(void 0, void 0, void 0, function* () {
-        yield withAuthorization('tasks/file/upload', data, (req) => __awaiter(void 0, void 0, void 0, function* () {
-            return yield TaskController_1.default.uploadFile(req.data);
-        }));
+        data.path = 'tasks/create';
+        try {
+            if (yield (0, AuthMiddleware_1.default)(data)) {
+                const { uid } = jwt.decode(data.accessToken);
+                const buffer = Buffer.from(data.file.buffer);
+                const file = {
+                    originalname: data.file.name,
+                    mimetype: data.file.type,
+                    buffer: buffer,
+                };
+                const photo = (yield TaskController_1.default.uploadFile(file)).data;
+                const task = data.task;
+                task.photo = photo;
+                const response = yield TaskController_1.default.createTask(task, uid);
+                socket.emit('tasks/create', JSON.stringify(response));
+            }
+            else {
+                socket.emit('tasks/create', JSON.stringify(new WsResponse_1.default(401, null)));
+            }
+        }
+        catch (err) {
+            socket.emit('tasks/create', JSON.stringify(new WsResponse_1.default(400, err)));
+        }
     }));
     socket.on('tasks/update', (data) => __awaiter(void 0, void 0, void 0, function* () {
-        yield withAuthorization('tasks/update', data, (req) => __awaiter(void 0, void 0, void 0, function* () {
+        yield withAuthorization('tasks/filter', data, (req) => __awaiter(void 0, void 0, void 0, function* () {
             const { uid } = jwt.decode(req.accessToken);
-            return yield TaskController_1.default.updateTask(req.data, uid);
+            yield TaskController_1.default.updateTask(req.data.task, uid);
+            return yield TaskController_1.default.filterTasks(uid, req.data.status, req.data.limit, req.data.startWith);
         }));
     }));
     socket.on('tasks/delete', (data) => __awaiter(void 0, void 0, void 0, function* () {
-        yield withAuthorization('tasks/delete', data, (req) => __awaiter(void 0, void 0, void 0, function* () {
+        yield withAuthorization('tasks/filter', data, (req) => __awaiter(void 0, void 0, void 0, function* () {
             const { uid } = jwt.decode(req.accessToken);
-            return yield TaskController_1.default.deleteTask(req.data, uid);
+            yield TaskController_1.default.deleteTask(req.data.taskId, uid);
+            return yield TaskController_1.default.filterTasks(uid, req.data.status, req.data.limit, req.data.startWith);
         }));
     }));
     socket.on('tasks/filter', (data) => __awaiter(void 0, void 0, void 0, function* () {

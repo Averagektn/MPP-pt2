@@ -19,6 +19,9 @@ const TaskList: React.FC = () => {
 
     const selectFilterRef = useRef<HTMLSelectElement | null>(null);
 
+    const statuses = ['Pending', 'Rejected', 'Accepted'];
+    const defLimit = 8;
+
     const socket = io('http://localhost:1337');
     socket.on('users/access', (res) => {
         const data: WsResponse = JSON.parse(res);
@@ -30,24 +33,24 @@ const TaskList: React.FC = () => {
             setIsAuthModalOpen(true);
         }
     });
+    socket.on('tasks/pages', (res) => {
+        const data: WsResponse = JSON.parse(res);
+
+        if (data.status >= 200 && data.status < 300) {
+            setCurrentPage(data.data - 1);
+        } 
+    });
     socket.on('tasks/filter', (res) => {
         const data: WsResponse = JSON.parse(res);
 
         if (data.status >= 200 && data.status < 300) {
             const newTasks = data.data;
-            if (newTasks.length > 0) {
-                setCurrentPage(currentPage);
-                setTasks(newTasks);
-            }
+            setCurrentPage(currentPage);
+            setTasks(newTasks);
         } else if (data.status === 401) {
             setIsValidAccessToken(false);
-        } else {
-            console.error('Get error', data.message);
-        }
-    })
-
-    const statuses = ['Pending', 'Rejected', 'Accepted'];
-    const defLimit = 8;
+        } 
+    });
 
     useEffect(() => {
         const fetchTasks = async (): Promise<void> => {
@@ -62,7 +65,7 @@ const TaskList: React.FC = () => {
         if (isValidAccessToken) {
             fetchTasks();
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isValidAccessToken, currentPage]);
 
     useEffect(() => {
@@ -101,80 +104,24 @@ const TaskList: React.FC = () => {
     const handleDelete = async (taskId: string): Promise<void> => {
         if (!isValidAccessToken) {
             setDeleteTask(taskId);
-        }
-
-        try {
-            const response = await fetch(`http://localhost:1337/tasks/${taskId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': accessToken
-                }
-            });
-
-            if (response.ok) {
-                const status = selectFilterRef.current?.value;
-                await loadFilteredTasks(status!, currentPage, defLimit);
-            } else if (response.status === 401) {
-                setIsValidAccessToken(false);
-            } else {
-                console.error('Delete error', response.statusText);
-            }
-        } catch (error) {
-            console.error('Error:', error);
+        } else {
+            const status = selectFilterRef.current?.value;
+            socket.emit('tasks/delete', JSON.stringify(new WsRequest({ taskId, status, startWith: currentPage, limit: defLimit }, accessToken, '')));
         }
     };
 
     const handleUpdate = async (taskId: string, date: string, status: string): Promise<void> => {
         if (!isValidAccessToken) {
             setUpdateTask(new Task('', '', status, taskId, date, null));
-        }
-
-        try {
-            const response = await fetch(`http://localhost:1337/tasks/${taskId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': accessToken
-                },
-                body: JSON.stringify({ date, status })
-            });
-
-            if (response.ok) {
-                const updatedTask = await response.json();
-                setTasks((prevTasks) =>
-                    prevTasks.map((task) =>
-                        task.id === taskId ? updatedTask : task
-                    )
-                );
-                alert('Updated');
-            } else if (response.status === 401) {
-                setIsValidAccessToken(false);
-            } else {
-                console.error('Update error', response.statusText);
-            }
-        } catch (error) {
-            console.error('Error:', error);
+        } else {
+            const filterStatus = selectFilterRef.current?.value;
+            const task = new Task('', '', status, taskId, date, '');
+            socket.emit('tasks/update', JSON.stringify(new WsRequest({ task, startWith: currentPage, limit: defLimit, status: filterStatus }, accessToken, '')));
         }
     };
 
     const handleLast = async (): Promise<void> => {
-        try {
-            const response = await fetch(`http://localhost:1337/tasks/pages?limit=${defLimit}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': accessToken
-                }
-            });
-
-            if (response.ok) {
-                const { pages } = await response.json();
-                setCurrentPage(pages - 1);
-            } else {
-                console.error('Get error', response.statusText);
-            }
-        } catch (error) {
-            console.error('Error:', error);
-        }
+        socket.emit('tasks/pages', JSON.stringify(new WsRequest({ defLimit }, accessToken, '')));
     }
 
     const handleStatusChange = (taskId: string, event: React.ChangeEvent<HTMLSelectElement>) => {

@@ -1,5 +1,7 @@
 import React, { ChangeEvent, useRef, useState } from 'react';
 import Task from '../model/Task';
+import { io } from 'socket.io-client';
+import WsResponse from '../model/WsResponse';
 
 interface CreateTaskProps {
     accessToken: string;
@@ -11,6 +13,15 @@ const CreateTask: React.FC<CreateTaskProps> = ({ accessToken, onTaskCreated }) =
     const [taskDescription, setTaskDescription] = useState<string>('');
     const [file, setFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+    const socket = io('http://localhost:1337');
+    socket.on('tasks/create', (res) => {
+        const data: WsResponse = JSON.parse(res);
+
+        if (data.status >= 200 && data.status < 300) {
+            onTaskCreated(data.data);
+        } 
+    });
 
     const handleFileChange = (event: ChangeEvent<HTMLInputElement>): void => {
         const selectedFile = event.target.files?.[0] || null;
@@ -24,45 +35,20 @@ const CreateTask: React.FC<CreateTaskProps> = ({ accessToken, onTaskCreated }) =
             return;
         }
 
-        const formData = new FormData();
-        formData.append('file', file);
-
-        try {
-            const response = await fetch('http://localhost:1337/tasks/photo', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'Authorization': accessToken
-                }
-            });
-            const { photo } = await response.json();
-            const taskData = { name: taskName, description: taskDescription, photo };
-
-            const taskResponse = await fetch('http://localhost:1337/tasks', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': accessToken
-                },
-                body: JSON.stringify(taskData)
-            });
-            const res = await taskResponse.json();
+        const task = new Task(taskName, taskDescription, null, null, null, null);
+        const reader = new FileReader();
+        reader.onload = () => {
+            const arrayBuffer = reader.result;
+            socket.emit('tasks/create', { file: { name: file.name, type: file.type, buffer: arrayBuffer }, task, accessToken });
 
             setTaskName('');
             setTaskDescription('');
             setFile(null);
-
-            if (taskResponse.ok) {
-                onTaskCreated(res);
-                if (fileInputRef.current) {
-                    fileInputRef.current.value = '';
-                }
-            } else {
-                console.error('Task add error:', taskResponse.statusText);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
             }
-        } catch (error) {
-            console.error('Error:', error);
-        }
+        };
+        reader.readAsArrayBuffer(file); 
     };
 
     return (
