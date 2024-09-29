@@ -83,13 +83,13 @@ class TaskController {
         return __awaiter(this, void 0, void 0, function* () {
             let tasks = [];
             if (!(0, number_verifier_1.default)(limit) || !(0, number_verifier_1.default)(startWith)) {
-                return new WsResponse_1.default(404, null);
+                return new WsResponse_1.default(404, startWith - 1);
             }
             try {
                 tasks = yield TaskRepository_1.default.getTasks(uid);
             }
             catch (err) {
-                return new WsResponse_1.default(404, null);
+                return new WsResponse_1.default(404, startWith - 1);
             }
             if (status !== 'None') {
                 tasks.sort((a, b) => {
@@ -104,22 +104,25 @@ class TaskController {
             }
             if (tasks.length < (startWith + 1) * limit) {
                 tasks = tasks.slice(startWith * limit);
+                if (tasks.length === 0) {
+                    return new WsResponse_1.default(404, startWith - 1);
+                }
             }
             else {
                 tasks = tasks.slice(startWith * limit, (startWith + 1) * limit);
             }
-            return new WsResponse_1.default(200, tasks);
+            return new WsResponse_1.default(200, { tasks, page: startWith });
         });
     }
     getTasks(uid, limit, startWith) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!(0, number_verifier_1.default)(limit) || !(0, number_verifier_1.default)(startWith)) {
-                return new WsResponse_1.default(404, null);
+                return new WsResponse_1.default(404, startWith - 1);
             }
             try {
                 let tasks = yield TaskRepository_1.default.getTasks(uid);
-                if (startWith >= tasks.length) {
-                    return new WsResponse_1.default(404, null);
+                if (tasks.length < (startWith + 2) * limit) {
+                    return new WsResponse_1.default(404, startWith - 1);
                 }
                 if (tasks.length < (startWith + 1) * limit) {
                     tasks = tasks.slice(startWith * limit);
@@ -127,10 +130,10 @@ class TaskController {
                 else {
                     tasks = tasks.slice(startWith * limit, (startWith + 1) * limit);
                 }
-                return new WsResponse_1.default(200, tasks);
+                return new WsResponse_1.default(200, { tasks, page: startWith });
             }
             catch (error) {
-                return new WsResponse_1.default(404, null);
+                return new WsResponse_1.default(404, startWith - 1);
             }
         });
     }

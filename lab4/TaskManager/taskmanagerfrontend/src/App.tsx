@@ -44,12 +44,12 @@ const TaskList: React.FC = () => {
         const data: WsResponse = JSON.parse(res);
 
         if (data.status >= 200 && data.status < 300) {
-            const newTasks = data.data;
-            setCurrentPage(currentPage);
+            const newTasks = data.data.tasks;
+            setCurrentPage(data.data.page);
             setTasks(newTasks);
         } else if (data.status === 401) {
             setIsValidAccessToken(false);
-        } 
+        }
     });
 
     useEffect(() => {
@@ -121,7 +121,7 @@ const TaskList: React.FC = () => {
     };
 
     const handleLast = async (): Promise<void> => {
-        socket.emit('tasks/pages', JSON.stringify(new WsRequest({ defLimit }, accessToken, '')));
+        socket.emit('tasks/pages', JSON.stringify(new WsRequest({ limit: defLimit }, accessToken, '')));
     }
 
     const handleStatusChange = (taskId: string, event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -249,11 +249,17 @@ const TaskList: React.FC = () => {
                         First
                     </button>
 
-                    <button type="submit" className="btn" id="prevButton" onClick={() => setCurrentPage(currentPage - 1)}>
+                    <button type="submit" className="btn" id="prevButton" onClick={async () => {
+                        const status = selectFilterRef.current?.value;
+                        await loadFilteredTasks(status!, currentPage - 1, defLimit)
+                    }}>
                         Prev
                     </button>
 
-                    <button type="submit" className="btn" id="nextButton" onClick={() => setCurrentPage(currentPage + 1)}>
+                    <button type="submit" className="btn" id="nextButton" onClick={async () => {
+                        const status = selectFilterRef.current?.value;
+                        await loadFilteredTasks(status!, currentPage + 1, defLimit)
+                    }}>
                         Next
                     </button>
 

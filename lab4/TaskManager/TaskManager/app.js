@@ -111,7 +111,7 @@ io.on('connection', (socket) => {
         yield withAuthorization('tasks/pages', data, (req) => __awaiter(void 0, void 0, void 0, function* () {
             var _c;
             const { uid } = jwt.decode(req.accessToken);
-            return yield TaskController_1.default.getTotalPages((_c = req.data) !== null && _c !== void 0 ? _c : 8, uid);
+            return yield TaskController_1.default.getTotalPages((_c = req.data.limit) !== null && _c !== void 0 ? _c : 8, uid);
         }));
     }));
     socket.on('tasks/id', (data) => __awaiter(void 0, void 0, void 0, function* () {

@@ -116,7 +116,7 @@ io.on('connection', (socket) => {
     socket.on('tasks/pages', async (data) => {
         await withAuthorization('tasks/pages', data, async (req) => {
             const { uid } = jwt.decode(req.accessToken) as jwt.JwtPayload;
-            return await taskController.getTotalPages(req.data ?? 8, uid);
+            return await taskController.getTotalPages(req.data.limit ?? 8, uid);
         });
     });
 

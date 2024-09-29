@@ -67,13 +67,13 @@ class TaskController {
         let tasks: Task[] = [];
 
         if (!isValidNumber(limit) || !isValidNumber(startWith)) {
-            return new WsResponse(404, null);
+            return new WsResponse(404, startWith - 1);
         }
 
         try {
             tasks = await taskRepository.getTasks(uid);
         } catch (err) {
-            return new WsResponse(404, null);
+            return new WsResponse(404, startWith - 1);
         }
 
         if (status !== 'None') {
@@ -90,22 +90,25 @@ class TaskController {
 
         if (tasks.length < (startWith + 1) * limit) {
             tasks = tasks.slice(startWith * limit);
+            if (tasks.length === 0) {
+                return new WsResponse(404, startWith - 1);
+            }
         } else {
             tasks = tasks.slice(startWith * limit, (startWith + 1) * limit);
         }
 
-        return new WsResponse(200, tasks);
+        return new WsResponse(200, { tasks, page: startWith });
     }
 
     async getTasks(uid: string, limit: number, startWith: number): Promise<WsResponse> {
         if (!isValidNumber(limit) || !isValidNumber(startWith)) {
-            return new WsResponse(404, null);
+            return new WsResponse(404, startWith - 1);
         }
 
         try {
             let tasks = await taskRepository.getTasks(uid);
-            if (startWith >= tasks.length) {
-                return new WsResponse(404, null);
+            if (tasks.length < (startWith + 2) * limit) {
+                return new WsResponse(404, startWith - 1);
             }
 
             if (tasks.length < (startWith + 1) * limit) {
@@ -113,9 +116,9 @@ class TaskController {
             } else {
                 tasks = tasks.slice(startWith * limit, (startWith + 1) * limit);
             }
-            return new WsResponse(200, tasks);
+            return new WsResponse(200, { tasks, page: startWith });
         } catch (error) {
-            return new WsResponse(404, null);
+            return new WsResponse(404, startWith - 1);
         }
     }
 
