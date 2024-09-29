@@ -7,6 +7,7 @@ import AddTask from './AddTask';
 import { io } from 'socket.io-client';
 import WsResponse from '../model/WsResponse';
 import WsRequest from '../model/WsRequest';
+import { createClient } from 'graphql-ws';
 
 const TaskList: React.FC = () => {
     const [tasks, setTasks] = useState<Task[]>([]); 
@@ -22,8 +23,11 @@ const TaskList: React.FC = () => {
     const statuses = ['Pending', 'Rejected', 'Accepted'];
     const defLimit = 8;
 
-    const socket = io('http://localhost:1337');
-    socket.on('users/access', (res) => {
+    //const socket = io('http://localhost:1337');
+    const client = createClient({
+        url: 'ws://localhost:1337/graphql',
+    });
+/*    socket.on('users/access', (res) => {
         const data: WsResponse = JSON.parse(res);
 
         if (data.status >= 200 && data.status < 300) {
@@ -52,7 +56,7 @@ const TaskList: React.FC = () => {
         } else if (data.status === 404 && currentPage === 0) {
             setTasks([]);
         }
-    });
+    });*/
 
     useEffect(() => {
         const fetchTasks = async (): Promise<void> => {
@@ -85,9 +89,24 @@ const TaskList: React.FC = () => {
             }
         };
 
-        const getNewToken = () => {
+        const getNewToken = async () => {
+            const query = client.iterate({
+                query: '{ hello }',
+            });
+
+            const { value } = await query.next();
+            console.log('value: ', value);
+
+            const subscription = client.iterate({
+                query: 'subscription { greetings }',
+            });
+
+            for await (const event of subscription) {
+                console.log(event);
+            }
+
             const refreshToken = localStorage.getItem('refreshJwt') ?? '';
-            socket.emit('users/access', JSON.stringify(new WsRequest(null, '', refreshToken)));
+            //socket.emit('users/access', JSON.stringify(new WsRequest(null, '', refreshToken)));
         };
 
         if (isValidAccessToken) {
@@ -100,7 +119,7 @@ const TaskList: React.FC = () => {
     }, [isValidAccessToken]);
 
     const loadFilteredTasks = async (status: string, currentPage: number, limit: number): Promise<void> => {
-        socket.emit('tasks/filter', JSON.stringify(new WsRequest({ status, limit, startWith: currentPage }, accessToken, '')));
+        //socket.emit('tasks/filter', JSON.stringify(new WsRequest({ status, limit, startWith: currentPage }, accessToken, '')));
     }
 
     const handleDelete = async (taskId: string): Promise<void> => {
@@ -108,7 +127,7 @@ const TaskList: React.FC = () => {
             setDeleteTask(taskId);
         } else {
             const status = selectFilterRef.current?.value;
-            socket.emit('tasks/delete', JSON.stringify(new WsRequest({ taskId, status, startWith: currentPage, limit: defLimit }, accessToken, '')));
+            //socket.emit('tasks/delete', JSON.stringify(new WsRequest({ taskId, status, startWith: currentPage, limit: defLimit }, accessToken, '')));
         }
     };
 
@@ -118,12 +137,12 @@ const TaskList: React.FC = () => {
         } else {
             const filterStatus = selectFilterRef.current?.value;
             const task = new Task('', '', status, taskId, date, '');
-            socket.emit('tasks/update', JSON.stringify(new WsRequest({ task, startWith: currentPage, limit: defLimit, status: filterStatus }, accessToken, '')));
+            //socket.emit('tasks/update', JSON.stringify(new WsRequest({ task, startWith: currentPage, limit: defLimit, status: filterStatus }, accessToken, '')));
         }
     };
 
     const handleLast = async (): Promise<void> => {
-        socket.emit('tasks/pages', JSON.stringify(new WsRequest({ limit: defLimit }, accessToken, '')));
+        //socket.emit('tasks/pages', JSON.stringify(new WsRequest({ limit: defLimit }, accessToken, '')));
     }
 
     const handleStatusChange = (taskId: string, event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -175,15 +194,15 @@ const TaskList: React.FC = () => {
         <div className="container">
             <h1>Task List</h1>
             <hr />
-            <AuthModal
+{/*            <AuthModal
                 isOpen={isAuthModalOpen}
                 onClose={(token) => {
                     setIsAuthModalOpen(false);
                     setIsValidAccessToken(true);
                     setAccessToken(token);
-                }} />
+                }} />*/}
             <section>
-                <AddTask accessToken={accessToken} onTaskCreated={handleTaskCreated} />
+                {/*<AddTask accessToken={accessToken} onTaskCreated={handleTaskCreated} />*/}
 
                 <div className="row">
                     <strong>Filter by</strong>
