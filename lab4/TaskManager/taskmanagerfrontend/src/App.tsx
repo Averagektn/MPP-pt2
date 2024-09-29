@@ -34,8 +34,7 @@ const TaskList: React.FC = () => {
         const data: WsResponse = JSON.parse(res);
 
         if (data.status >= 200 && data.status < 300) {
-            console.log(data.data);
-            const newTasks = JSON.parse(data.data);
+            const newTasks = data.data;
             if (newTasks.length > 0) {
                 setCurrentPage(currentPage);
                 setTasks(newTasks);
