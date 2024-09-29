@@ -49,6 +49,8 @@ const TaskList: React.FC = () => {
             setTasks(newTasks);
         } else if (data.status === 401) {
             setIsValidAccessToken(false);
+        } else if (data.status === 404 && currentPage === 0) {
+            setTasks([]);
         }
     });
 
