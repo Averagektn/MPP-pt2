@@ -4,6 +4,9 @@ import React from 'react'
 import Task from '../model/Task'
 import AuthModal from './Auth';
 import AddTask from './AddTask';
+import { io } from 'socket.io-client';
+import WsResponse from '../model/WsResponse';
+import WsRequest from '../model/WsRequest';
 
 const TaskList: React.FC = () => {
     const [tasks, setTasks] = useState<Task[]>([]); 
@@ -16,6 +19,31 @@ const TaskList: React.FC = () => {
 
     const selectFilterRef = useRef<HTMLSelectElement | null>(null);
 
+    const socket = io('http://localhost:1337');
+    socket.on('users/access', (response: WsResponse) => {
+        if (response.status >= 200 && response.status < 300) {
+            setAccessToken(response.data.accessToken);
+            setIsValidAccessToken(true);
+        } else {
+            setIsAuthModalOpen(true);
+        }
+    });
+
+    socket.on('tasks/filter', (response: WsResponse) => {
+        if (response.status >= 200 && response.status < 300) {
+            console.log(response.data);
+            const newTasks = JSON.parse(response.data);
+            //if (newTasks.length > 0) {
+                setCurrentPage(currentPage);
+                setTasks(newTasks);
+            //}
+        } else if (response.status === 401) {
+            setIsValidAccessToken(false);
+        } else {
+            console.error('Get error', response.message);
+        }
+    })
+
     const statuses = ['Pending', 'Rejected', 'Accepted'];
     const defLimit = 8;
 
@@ -23,7 +51,7 @@ const TaskList: React.FC = () => {
         const fetchTasks = async (): Promise<void> => {
             try {
                 const status = selectFilterRef.current?.value;
-                await loadFilteredTasks(status!, currentPage, defLimit, true);
+                await loadFilteredTasks(status!, currentPage, defLimit);
             } catch (error) {
                 console.error('Error:', error);
             }
@@ -50,20 +78,10 @@ const TaskList: React.FC = () => {
             }
         };
 
-        const getNewToken = async () => {
-            const response = await fetch(`http://localhost:1337/auth/access`, {
-                method: 'POST',
-                credentials: 'include'
-            });
-
-            if (response.ok) {
-                const token = response.headers.get('Authorization');
-                setAccessToken(token as string);
-                setIsValidAccessToken(true);
-            } else {
-                setIsAuthModalOpen(true);
-            }
-        }
+        const getNewToken = () => {
+            const refreshToken = localStorage.getItem('refreshJwt') ?? '';
+            socket.emit('users/access', JSON.stringify(new WsRequest(null, '', refreshToken)));
+        };
 
         if (isValidAccessToken) {
             executeDelete();
@@ -74,25 +92,8 @@ const TaskList: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isValidAccessToken]);
 
-    const loadFilteredTasks = async (status: string, currentPage: number, limit: number, loadEmptyArray = false): Promise<void> => {
-        const response = await fetch(`http://localhost:1337/tasks/filter?status=${status}&limit=${limit}&startWith=${currentPage}`, {
-            method: 'GET',
-            headers: {
-                'Authorization': accessToken
-            }
-        });
-
-        if (response.ok) {
-            const newTasks = await response.json();
-            if (newTasks.length > 0 || loadEmptyArray) {
-                setCurrentPage(currentPage);
-                setTasks(newTasks);
-            }
-        } else if (response.status === 401) {
-            setIsValidAccessToken(false);
-        } else {
-            console.error('Get error', response.statusText);
-        }
+    const loadFilteredTasks = async (status: string, currentPage: number, limit: number): Promise<void> => {
+        socket.emit('tasks/filter', JSON.stringify(new WsRequest({ status, limit, startWith: currentPage }, accessToken, '')));
     }
 
     const handleDelete = async (taskId: string): Promise<void> => {
@@ -110,7 +111,7 @@ const TaskList: React.FC = () => {
 
             if (response.ok) {
                 const status = selectFilterRef.current?.value;
-                await loadFilteredTasks(status!, currentPage, defLimit, true);
+                await loadFilteredTasks(status!, currentPage, defLimit);
             } else if (response.status === 401) {
                 setIsValidAccessToken(false);
             } else {
@@ -225,9 +226,10 @@ const TaskList: React.FC = () => {
             <hr />
             <AuthModal
                 isOpen={isAuthModalOpen}
-                onClose={() => {
+                onClose={(token) => {
                     setIsAuthModalOpen(false);
                     setIsValidAccessToken(true);
+                    setAccessToken(token);
                 }} />
             <section>
                 <AddTask accessToken={accessToken} onTaskCreated={handleTaskCreated} />

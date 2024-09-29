@@ -5,6 +5,7 @@ import jwt = require('jsonwebtoken');
 import WsRequest from './model/WsRequest';
 import WsResponse from './model/WsResponse';
 
+const cors = require('cors');
 const http = require('http');
 const serviceAccount = require("./config/taskmanager-dedf9-firebase-adminsdk-uia8o-f0091c57e0.json");
 admin.initializeApp({
@@ -18,8 +19,23 @@ import taskController from './controllers/TaskController';
 import authController from './controllers/AuthController';
 
 const app = express();
+const corsOptions = cors({
+    origin: 'http://localhost:5173', 
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
+    allowedHeaders: ['Content-Type'], 
+    credentials: true 
+});
+
+app.use(corsOptions);
+app.options('*', corsOptions);
+
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+    cors: {
+        origin: '*', 
+        methods: ['GET', 'POST']
+    }
+});
 
 type AsyncCallback = (data: WsRequest) => Promise<WsResponse>;
 

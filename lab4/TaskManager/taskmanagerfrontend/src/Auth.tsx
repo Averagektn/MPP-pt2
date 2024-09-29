@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import '../stylesheets/main.css'
 import React from 'react'
+import { io } from 'socket.io-client';
+import WsResponse from '../model/WsResponse';
+import WsRequest from '../model/WsRequest';
 
 interface AuthModalProps {
     isOpen: boolean;
-    onClose: () => void;
+    onClose: (accessToken: string) => void;
 }
 
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
@@ -12,53 +15,37 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     const [password, setPassword] = useState<string>('');
     const [error, setError] = useState<string>('');
 
+    const socket = io('http://localhost:1337');
+    socket.on('users/refresh', (response: WsResponse) => {
+        if (response.status >= 200 && response.status < 300) {
+            localStorage.setItem('refreshJwt', response.data.refreshToken);
+            onClose(response.data.accessToken);
+        } else {
+            setError('Login error');
+        }
+    });
+
+    socket.on('users/create', (response: WsResponse) => {
+        if (response.status >= 200 && response.status < 300) {
+            localStorage.setItem('refreshJwt', response.data.refreshToken);
+            onClose(response.data.accessToken);
+        } else {
+            setError('Registration error');
+        }
+    });
+
     const handleSubmitRegistration = async (event: React.FormEvent<HTMLButtonElement>) => {
         event.preventDefault();
         setError('');
 
-        try {
-            const response = await fetch('http://localhost:1337/auth/users', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include',
-                body: JSON.stringify({ email, password }),
-            });
-            if (response.ok) {
-                console.log('Registration successful:');
-                onClose();
-            } else {
-                setError('Registration error');
-            }
-        } catch (err) {
-            setError(`Registration error ${err}`);
-        }
+        socket.emit('users/create', JSON.stringify(new WsRequest({ email, password }, '', '')));
     }
 
     const handleSubmitLogin = async (event: React.FormEvent<HTMLButtonElement>) => {
         event.preventDefault();
         setError('');
 
-        try {
-            const response = await fetch('http://localhost:1337/auth/refresh', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email, password }),
-                credentials: 'include'
-            });
-
-            if (response.ok) {
-                console.log('Login successful:');
-                onClose();
-            } else {
-                setError('Login error');
-            }
-        } catch (err) {
-            setError(`Login error ${err}`);
-        }
+        socket.emit('users/refresh', JSON.stringify(new WsRequest({ email, password }, '', '')));
     };
 
     if (!isOpen) {
