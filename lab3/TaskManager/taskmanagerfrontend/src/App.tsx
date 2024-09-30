@@ -105,7 +105,8 @@ const TaskList: React.FC = () => {
                 method: 'DELETE',
                 headers: {
                     'Authorization': accessToken
-                }
+                },
+                credentials: 'include'
             });
 
             if (response.ok) {

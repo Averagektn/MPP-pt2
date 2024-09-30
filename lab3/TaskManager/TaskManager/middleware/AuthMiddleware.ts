@@ -8,7 +8,8 @@ export default async function validateJwt(req: express.Request, res: express.Res
     if (req.path.startsWith('/tasks')) {
         try {
             const token = req.headers['authorization'].split(' ')[1];
-
+            const refresh = req.cookies.token;
+            console.log(refresh);
             if (!token) {
                 return res.status(401).send('Unauthorized: No token provided');
             }
