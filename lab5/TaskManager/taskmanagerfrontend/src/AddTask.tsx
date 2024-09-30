@@ -31,6 +31,9 @@ const CreateTask: React.FC<CreateTaskProps> = ({ accessToken, onTaskCreated }) =
                 url: 'ws://localhost:1337/graphql',
             });
 
+            const dataUrl = reader.result as string; 
+            const base64Data = dataUrl.split(',')[1]; 
+
             const task = new Task(taskName, taskDescription, null, null, null, null);
 
             const query = client.iterate({
@@ -44,7 +47,7 @@ const CreateTask: React.FC<CreateTaskProps> = ({ accessToken, onTaskCreated }) =
                           }
                         }`,
                 variables: {
-                    file: { name: file.name, type: file.type, data: reader.result },
+                    file: { name: file.name, type: file.type, data: base64Data },
                     task,
                     accessToken
                 },
