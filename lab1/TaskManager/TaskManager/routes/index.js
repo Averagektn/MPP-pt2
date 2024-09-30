@@ -38,7 +38,7 @@ router.post('/add-task', upload.single('file'), (req, res) => {
         });
         blobStream.on('error', (err) => {
             console.error(err);
-            res.status(500).send('Failed to upload to Firebase Storage.');
+            res.status(400).send('Failed to upload to Firebase Storage.');
         });
         blobStream.on('finish', () => __awaiter(void 0, void 0, void 0, function* () {
             yield blob.makePublic();

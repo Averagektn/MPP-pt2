@@ -11,7 +11,7 @@ const db = admin.database();
 const dbRef = db.ref(tasksDbRef);
 const storageBucket = admin.storage().bucket();
 
-router.post('/add-task', upload.single('file'), (req: express.Request, res: express.Response) => {
+router.post('/add-task', upload.single('file'), (req: express.Request, res: express.Response): Promise<void> => {
     const { name, description } = req.body;
     const file = req.file;
     const defaultStatus = "Pending";
@@ -35,7 +35,7 @@ router.post('/add-task', upload.single('file'), (req: express.Request, res: expr
 
         blobStream.on('error', (err) => {
             console.error(err);
-            res.status(500).send('Failed to upload to Firebase Storage.');
+            res.status(400).send('Failed to upload to Firebase Storage.');
         });
 
         blobStream.on('finish', async () => {
@@ -55,7 +55,7 @@ router.post('/add-task', upload.single('file'), (req: express.Request, res: expr
     }
 });
 
-router.post('/update-task', async (req: express.Request, res: express.Response) => {
+router.post('/update-task', async (req: express.Request, res: express.Response): Promise<void> => {
     const id = req.body.taskId;
     const { date, status } = req.body;
 
@@ -64,7 +64,7 @@ router.post('/update-task', async (req: express.Request, res: express.Response) 
     res.redirect('/');
 });
 
-router.post('/delete-task', async (req: express.Request, res: express.Response) => {
+router.post('/delete-task', async (req: express.Request, res: express.Response): Promise<void> => {
     const id = req.body.taskId;
     const path = req.body.path;
 
@@ -77,7 +77,7 @@ router.post('/delete-task', async (req: express.Request, res: express.Response) 
     res.redirect('/');
 });
 
-router.get('/filter', async (req: express.Request, res: express.Response) => {
+router.get('/filter', async (req: express.Request, res: express.Response): Promise<void> => {
     const tasks = await getTasks();
     const status = req.query.status;
 
@@ -97,7 +97,7 @@ router.get('/filter', async (req: express.Request, res: express.Response) => {
     }
 });
 
-router.get('/', async (req: express.Request, res: express.Response) => {
+router.get('/', async (req: express.Request, res: express.Response): Promise<void> => {
     const tasks = await getTasks();
 
     res.render('index', { tasks });

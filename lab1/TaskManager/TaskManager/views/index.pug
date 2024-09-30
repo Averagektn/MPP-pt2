@@ -43,7 +43,7 @@ block content
                     option(value=skill, selected=task.status === skill)= skill
               button(type="submit" class="btn") Update
             if task.photo
-              img(src=task.photo)
+              img(src=task.photo width="200px")
             form(action="/delete-task" method="POST")
               input(type="hidden" value=task.id name="taskId")
               if task.photo

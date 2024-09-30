@@ -1,8 +1,8 @@
 export default class Task {
-    id: string | null;
-    date: string | null;
     name: string;
     description: string;
+    id: string | null;
+    date: string | null;
     status: string | null;
     photo: string | null;
 
