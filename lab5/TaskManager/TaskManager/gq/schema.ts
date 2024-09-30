@@ -101,11 +101,15 @@ const Query = new GraphQLObjectType({
             type: GraphQLInt,
             args: {
                 limit: { type: GraphQLInt },
-                accessToken: { type: GraphQLInt }
+                accessToken: { type: GraphQLString }
             },
             resolve: async (src, { limit, accessToken }, context) => {
-                const { uid } = jwt.decode(accessToken) as jwt.JwtPayload;
-                return await taskController.getTotalPages(limit, uid)
+                if (await authorize(accessToken, 'tasks')) {
+                    const { uid } = jwt.decode(accessToken) as jwt.JwtPayload;
+                    return await taskController.getTotalPages(limit, uid);
+                } else {
+                    throw new Error('401');
+                }
             }
         }
     }

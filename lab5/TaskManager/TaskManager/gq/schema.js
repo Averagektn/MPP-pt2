@@ -109,11 +109,16 @@ const Query = new graphql_1.GraphQLObjectType({
             type: graphql_1.GraphQLInt,
             args: {
                 limit: { type: graphql_1.GraphQLInt },
-                accessToken: { type: graphql_1.GraphQLInt }
+                accessToken: { type: graphql_1.GraphQLString }
             },
             resolve: (src, { limit, accessToken }, context) => __awaiter(void 0, void 0, void 0, function* () {
-                const { uid } = jwt.decode(accessToken);
-                return yield TaskController_1.default.getTotalPages(limit, uid);
+                if (yield (0, AuthMiddleware_1.default)(accessToken, 'tasks')) {
+                    const { uid } = jwt.decode(accessToken);
+                    return yield TaskController_1.default.getTotalPages(limit, uid);
+                }
+                else {
+                    throw new Error('401');
+                }
             })
         }
     }

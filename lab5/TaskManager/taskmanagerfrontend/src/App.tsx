@@ -239,7 +239,7 @@ const TaskList: React.FC = () => {
     };
 
     const handleLast = async (): Promise<void> => {
-        if (!isValidAccessToken) {
+        if (isValidAccessToken) {
             const client = createClient({
                 url: 'ws://localhost:1337/graphql',
             });
@@ -251,20 +251,24 @@ const TaskList: React.FC = () => {
                 variables: { limit: defLimit, accessToken },
             });
 
-            const { value } = await query.next();
-            console.log(value);
+            try {
+                const { value } = await query.next();
+                console.log(value);
 
-            if (value.errors) {
-                const message = value.errors[0].message
-                if (message === '401') {
-                    setIsValidAccessToken(false);
+                if (value.errors) {
+                    const message = value.errors[0].message
+                    if (message === '401') {
+                        setIsValidAccessToken(false);
+                    }
+                } else {
+                    const status = selectFilterRef.current?.value;
+                    await loadFilteredTasks(status!, value.data.getPageCount - 1, defLimit);
                 }
-            } else {
-                const status = selectFilterRef.current?.value;
-                await loadFilteredTasks(status!, value.data.getPageCount - 1, defLimit);
-            }
 
-            client.dispose();
+                client.dispose();
+            } catch (err) {
+                console.log(err);
+            }
         }
     }
 
