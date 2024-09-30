@@ -13,15 +13,6 @@ const CreateTask: React.FC<CreateTaskProps> = ({ accessToken, onTaskCreated }) =
     const [file, setFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-/*    const socket = io('http://localhost:1337');
-    socket.on('tasks/create', (res) => {
-        const data: WsResponse = JSON.parse(res);
-
-        if (data.status >= 200 && data.status < 300) {
-            onTaskCreated(data.data);
-        } 
-    });*/
-
     const handleFileChange = (event: ChangeEvent<HTMLInputElement>): void => {
         const selectedFile = event.target.files?.[0] || null;
         setFile(selectedFile);
@@ -43,7 +34,7 @@ const CreateTask: React.FC<CreateTaskProps> = ({ accessToken, onTaskCreated }) =
             const task = new Task(taskName, taskDescription, null, null, null, null);
 
             const query = client.iterate({
-                query: `mutation CreateTask($file: FileInput!, $task: TaskInput!, $accessToken: String!) {
+                query: `mutation CreateTask($file: File!, $task: TaskInput!, $accessToken: String!) {
                           createTask(file: $file, task: $task, accessToken: $accessToken) {
                             id
                             name
@@ -77,7 +68,7 @@ const CreateTask: React.FC<CreateTaskProps> = ({ accessToken, onTaskCreated }) =
 
             client.dispose();
         };
-        reader.readAsDataURL(file); 
+        reader.readAsDataURL(file);
     };
 
     return (

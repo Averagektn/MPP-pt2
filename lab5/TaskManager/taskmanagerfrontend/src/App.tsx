@@ -4,9 +4,6 @@ import React from 'react'
 import Task from '../model/Task'
 import AuthModal from './Auth';
 import AddTask from './AddTask';
-import { io } from 'socket.io-client';
-import WsResponse from '../model/WsResponse';
-import WsRequest from '../model/WsRequest';
 import { createClient } from 'graphql-ws';
 
 const TaskList: React.FC = () => {
@@ -22,39 +19,6 @@ const TaskList: React.FC = () => {
 
     const statuses = ['Pending', 'Rejected', 'Accepted'];
     const defLimit = 8;
-
-    //const socket = io('http://localhost:1337');
-
-/*    socket.on('users/access', (res) => {
-        const data: WsResponse = JSON.parse(res);
-
-        if (data.status >= 200 && data.status < 300) {
-            setAccessToken(data.data.accessToken);
-            setIsValidAccessToken(true);
-        } else {
-            setIsAuthModalOpen(true);
-        }
-    });
-    socket.on('tasks/pages', (res) => {
-        const data: WsResponse = JSON.parse(res);
-
-        if (data.status >= 200 && data.status < 300) {
-            setCurrentPage(data.data - 1);
-        } 
-    });
-    socket.on('tasks/filter', (res) => {
-        const data: WsResponse = JSON.parse(res);
-
-        if (data.status >= 200 && data.status < 300) {
-            const newTasks = data.data.tasks;
-            setCurrentPage(data.data.page);
-            setTasks(newTasks);
-        } else if (data.status === 401) {
-            setIsValidAccessToken(false);
-        } else if (data.status === 404 && currentPage === 0) {
-            setTasks([]);
-        }
-    });*/
 
     useEffect(() => {
         const fetchTasks = async (): Promise<void> => {
