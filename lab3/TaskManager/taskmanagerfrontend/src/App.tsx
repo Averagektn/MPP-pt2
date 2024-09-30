@@ -174,6 +174,29 @@ const TaskList: React.FC = () => {
         }
     }
 
+    const handleNext = async (): Promise<void> => {
+        try {
+            const response = await fetch(`http://localhost:1337/tasks/pages?limit=${defLimit}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': accessToken
+                }
+            });
+
+            if (response.ok) {
+                const { pages } = await response.json();
+                if (currentPage + 1 < pages) {
+                    setCurrentPage(currentPage + 1);
+                }
+            } else {
+                console.error('Get error', response.statusText);
+            }
+            
+        } catch (err) {
+            console.error('Error:', err);
+        }
+    }
+
     const handleStatusChange = (taskId: string, event: React.ChangeEvent<HTMLSelectElement>) => {
         const newTasks = [...tasks];
         const selectedStatus = event.target.value;
@@ -302,7 +325,7 @@ const TaskList: React.FC = () => {
                         Prev
                     </button>
 
-                    <button type="submit" className="btn" id="nextButton" onClick={() => setCurrentPage(currentPage + 1)}>
+                    <button type="submit" className="btn" id="nextButton" onClick={handleNext}>
                         Next
                     </button>
 
