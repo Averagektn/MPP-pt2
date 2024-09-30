@@ -117,7 +117,10 @@ const TaskList: React.FC = () => {
             const message = value.errors[0].message
             if (message === '401') {
                 setIsValidAccessToken(false);
-            } else if (message === '404' && currentPage === 0) {
+            } else if (message === '404') {
+                if (currentPage !== 0) {
+                    setCurrentPage(currentPage - 1);
+                }
                 setTasks([]);
             }
         } else {
