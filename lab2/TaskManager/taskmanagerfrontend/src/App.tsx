@@ -111,12 +111,8 @@ const TaskList: React.FC = () => {
             });
 
             if (response.ok) {
-                const updatedTask = await response.json();
-                setTasks((prevTasks) =>
-                    prevTasks.map((task) =>
-                        task.id === taskId ? updatedTask : task
-                    )
-                );
+                const status = selectFilterRef.current?.value;
+                await loadFilteredTasks(status!, currentPage, defLimit, true);
             } else {
                 console.error('Update error', response.statusText);
             }
