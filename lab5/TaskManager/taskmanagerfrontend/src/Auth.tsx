@@ -1,9 +1,7 @@
 import { useState } from 'react'
 import '../stylesheets/main.css'
 import React from 'react'
-import { io } from 'socket.io-client';
-import WsResponse from '../model/WsResponse';
-import WsRequest from '../model/WsRequest';
+import { createClient } from 'graphql-ws';
 
 interface AuthModalProps {
     isOpen: boolean;
@@ -15,40 +13,68 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     const [password, setPassword] = useState<string>('');
     const [error, setError] = useState<string>('');
 
-    const socket = io('http://localhost:1337');
-    socket.on('users/refresh', (res) => {
-        const data: WsResponse = JSON.parse(res);
-
-        if (data.status >= 200 && data.status < 300) {
-            localStorage.setItem('refreshJwt', data.data.refreshToken);
-            onClose(data.data.accessToken);
-        } else {
-            setError('Login error');
-        }
-    });
-    socket.on('users/create', (res) => {
-        const data: WsResponse = JSON.parse(res);
-
-        if (data.status >= 200 && data.status < 300) {
-            localStorage.setItem('refreshJwt', data.data.refreshToken);
-            onClose(data.data.accessToken);
-        } else {
-            setError('Registration error');
-        }
-    });
-
     const handleSubmitRegistration = async (event: React.FormEvent<HTMLButtonElement>) => {
         event.preventDefault();
         setError('');
 
-        socket.emit('users/create', JSON.stringify(new WsRequest({ email, password }, '', '')));
+        const client = createClient({
+            url: 'ws://localhost:1337/graphql',
+        });
+
+        const query = client.iterate({
+            query: `mutation CreateUser($email: String!, $password: String!) {
+                  createUser(email: $email, password: $password) {
+                    accessToken
+                    refreshToken
+                  }
+                }`,
+            variables: { email, password },
+        });
+
+        const { value } = await query.next();
+
+        console.log(value);
+
+        if (value.errors) {
+            setError('Registration error');
+        } else {
+            localStorage.setItem('refreshJwt', value.data.createUser.refreshToken);
+            onClose(value.data.createUser.accessToken);
+        }
+
+        client.dispose();
     }
 
     const handleSubmitLogin = async (event: React.FormEvent<HTMLButtonElement>) => {
         event.preventDefault();
         setError('');
 
-        socket.emit('users/refresh', JSON.stringify(new WsRequest({ email, password }, '', '')));
+        const client = createClient({
+            url: 'ws://localhost:1337/graphql',
+        });
+
+        const query = client.iterate({
+            query: `query GetRefreshToken($email: String!, $password: String!) {
+                        getRefreshToken(email: $email, password: $password) {
+                            accessToken
+                            refreshToken
+                        }
+                    }`,
+            variables: { email, password },
+        });
+
+        const { value } = await query.next();
+
+        console.log(value);
+
+        if (value.errors) {
+            setError('Login error');
+        } else {
+            localStorage.setItem('refreshJwt', value.data.getRefreshToken.refreshToken);
+            onClose(value.data.getRefreshToken.accessToken);
+        }
+
+        client.dispose();
     };
 
     if (!isOpen) {

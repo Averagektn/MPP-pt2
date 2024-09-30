@@ -10,47 +10,30 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const AuthService_1 = require("../services/AuthService");
-const WsResponse_1 = require("../model/WsResponse");
 class AuthController {
     getRefreshToken(email, password) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!email || !password) {
-                return new WsResponse_1.default(401, null);
+                throw new Error('401');
             }
-            try {
-                const refreshToken = yield AuthService_1.default.getRefreshToken(email, password);
-                yield AuthService_1.default.getUidByEmail(email);
-                const accessToken = yield AuthService_1.default.getAccessToken(refreshToken);
-                return new WsResponse_1.default(200, { refreshToken, accessToken });
-            }
-            catch (err) {
-                return new WsResponse_1.default(401, null, `${err}`);
-            }
+            const refreshToken = yield AuthService_1.default.getRefreshToken(email, password);
+            yield AuthService_1.default.getUidByEmail(email);
+            const accessToken = yield AuthService_1.default.getAccessToken(refreshToken);
+            return { refreshToken, accessToken };
         });
     }
     getAccessToken(refreshToken) {
         return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const accessToken = yield AuthService_1.default.getAccessToken(refreshToken);
-                return new WsResponse_1.default(200, { accessToken });
-            }
-            catch (err) {
-                return new WsResponse_1.default(401, null, `${err}`);
-            }
+            return yield AuthService_1.default.getAccessToken(refreshToken);
         });
     }
     createUser(email, password) {
         return __awaiter(this, void 0, void 0, function* () {
-            try {
-                yield AuthService_1.default.createUser(email, password);
-                const refreshToken = yield AuthService_1.default.getRefreshToken(email, password);
-                const uid = yield AuthService_1.default.getUidByEmail(email);
-                const accessToken = yield AuthService_1.default.getAccessToken(refreshToken);
-                return new WsResponse_1.default(201, { refreshToken, accessToken });
-            }
-            catch (err) {
-                return new WsResponse_1.default(401, null, `${err}`);
-            }
+            yield AuthService_1.default.createUser(email, password);
+            const refreshToken = yield AuthService_1.default.getRefreshToken(email, password);
+            yield AuthService_1.default.getUidByEmail(email);
+            const accessToken = yield AuthService_1.default.getAccessToken(refreshToken);
+            return { refreshToken, accessToken };
         });
     }
 }

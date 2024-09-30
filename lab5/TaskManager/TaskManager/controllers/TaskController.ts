@@ -4,76 +4,49 @@ import isValidNumber from '../utils/number_verifier';
 import WsResponse from '../model/WsResponse';
 
 class TaskController {
-    async createTask(task: Task, uid: string): Promise<WsResponse> {
+    createTask(task: Task, uid: string): Task {
         const defaultStatus = "Pending";
         task.status = defaultStatus;
 
-        try {
-            task = taskRepository.createTask(task, uid);
-            return new WsResponse(201, task, 'Task created');
-        } catch (err) {
-            console.error('Error: ', err);
-            return new WsResponse(400, null, `${err}`);
-        }
+        return taskRepository.createTask(task, uid);
     }
 
-    async uploadFile(file: any): Promise<WsResponse> {
-        try {
-            const photo = await taskRepository.uploadFile(file);
-            return new WsResponse(201, photo);
-        } catch (err) {
-            console.error('Error uploading file:', err);
-            return new WsResponse(404, null, `${err}`);
-        }
+    async uploadFile(file: any): Promise<string> {
+        return await taskRepository.uploadFile(file);
     }
 
-    async updateTask(task: Task, uid: string): Promise<WsResponse> {
-        try {
-            task = await taskRepository.updateTask(task.id, task.date ?? null, task.status ?? null, uid);
-            return new WsResponse(200, task);
-        } catch (err) {
-            console.error('Error:', err);
-            return new WsResponse(400, null, `${err}`);
-        }
+    async updateTask(task: Task, uid: string): Promise<Task> {
+        return await taskRepository.updateTask(task.id, task.date ?? null, task.status ?? null, uid);
     }
 
-    async deleteTask(taskId: string, uid: string): Promise<WsResponse> {
+    async deleteTask(taskId: string, uid: string): Promise<void> {
         const path = (await taskRepository.getTaskById(taskId, uid)).photo;
 
-        try {
-            await taskRepository.deleteTask(taskId, path, uid);
-            return new WsResponse(204, null);
-        } catch (err) {
-            return new WsResponse(404, null, `${err}`);
-        }
+        await taskRepository.deleteTask(taskId, path, uid);
     }
 
-    async getTotalPages(limit: number, uid: string): Promise<WsResponse> {
+    async getTotalPages(limit: number, uid: string): Promise<number> {
         if (!isValidNumber(limit)) {
-            return new WsResponse(404, null);
+            throw new Error('404');
         }
 
-        try {
-            const tasks = await taskRepository.getTasks(uid);
-            const pages = Math.ceil(tasks.length / limit);
+        const tasks = await taskRepository.getTasks(uid);
+        const pages = Math.ceil(tasks.length / limit);
 
-            return new WsResponse(200, pages);
-        } catch (err) {
-            return new WsResponse(404, null, `${err}`);
-        }
+        return pages;
     }
 
-    async filterTasks(uid: string, status: string, limit: number, startWith: number): Promise<WsResponse> {
+    async filterTasks(uid: string, status: string, limit: number, startWith: number): Promise<any> {
         let tasks: Task[] = [];
 
         if (!isValidNumber(limit) || !isValidNumber(startWith)) {
-            return new WsResponse(404, startWith - 1);
+            throw new Error('404');
         }
 
         try {
             tasks = await taskRepository.getTasks(uid);
         } catch (err) {
-            return new WsResponse(404, startWith - 1);
+            throw new Error('404');
         }
 
         if (status !== 'None') {
@@ -91,13 +64,13 @@ class TaskController {
         if (tasks.length < (startWith + 1) * limit) {
             tasks = tasks.slice(startWith * limit);
             if (tasks.length === 0) {
-                return new WsResponse(404, startWith - 1);
+                throw new Error('404');
             }
         } else {
             tasks = tasks.slice(startWith * limit, (startWith + 1) * limit);
         }
 
-        return new WsResponse(200, { tasks, page: startWith });
+        return { tasks, page: startWith };
     }
 
     async getTasks(uid: string, limit: number, startWith: number): Promise<WsResponse> {

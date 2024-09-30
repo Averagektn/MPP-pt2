@@ -1,7 +1,6 @@
 import React, { ChangeEvent, useRef, useState } from 'react';
 import Task from '../model/Task';
-import { io } from 'socket.io-client';
-import WsResponse from '../model/WsResponse';
+import { createClient } from 'graphql-ws';
 
 interface CreateTaskProps {
     accessToken: string;
@@ -14,14 +13,14 @@ const CreateTask: React.FC<CreateTaskProps> = ({ accessToken, onTaskCreated }) =
     const [file, setFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-    const socket = io('http://localhost:1337');
+/*    const socket = io('http://localhost:1337');
     socket.on('tasks/create', (res) => {
         const data: WsResponse = JSON.parse(res);
 
         if (data.status >= 200 && data.status < 300) {
             onTaskCreated(data.data);
         } 
-    });
+    });*/
 
     const handleFileChange = (event: ChangeEvent<HTMLInputElement>): void => {
         const selectedFile = event.target.files?.[0] || null;
@@ -35,11 +34,39 @@ const CreateTask: React.FC<CreateTaskProps> = ({ accessToken, onTaskCreated }) =
             return;
         }
 
-        const task = new Task(taskName, taskDescription, null, null, null, null);
         const reader = new FileReader();
-        reader.onload = () => {
-            const arrayBuffer = reader.result;
-            socket.emit('tasks/create', { file: { name: file.name, type: file.type, buffer: arrayBuffer }, task, accessToken });
+        reader.onloadend = async () => {
+            const client = createClient({
+                url: 'ws://localhost:1337/graphql',
+            });
+
+            const task = new Task(taskName, taskDescription, null, null, null, null);
+
+            const query = client.iterate({
+                query: `mutation CreateTask($file: FileInput!, $task: TaskInput!, $accessToken: String!) {
+                          createTask(file: $file, task: $task, accessToken: $accessToken) {
+                            id
+                            name
+                            description
+                            status
+                            photo
+                          }
+                        }`,
+                variables: {
+                    file: { name: file.name, type: file.type, data: reader.result },
+                    task,
+                    accessToken
+                },
+            });
+
+            const { value } = await query.next();
+            console.log(value);
+
+            if (!value.errors) {
+                onTaskCreated(value.data.createTask);
+            } else {
+                alert('FAIL');
+            }
 
             setTaskName('');
             setTaskDescription('');
@@ -47,8 +74,10 @@ const CreateTask: React.FC<CreateTaskProps> = ({ accessToken, onTaskCreated }) =
             if (fileInputRef.current) {
                 fileInputRef.current.value = '';
             }
+
+            client.dispose();
         };
-        reader.readAsArrayBuffer(file); 
+        reader.readAsDataURL(file); 
     };
 
     return (

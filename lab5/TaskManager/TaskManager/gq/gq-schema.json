@@ -1,9 +1,0 @@
-type Task {
-  name: String
-  description: String
-}
-
-type Query {
-  tasks(limit: String, startWith: String): [Task],
-  taskById(id: String!): Task
-}

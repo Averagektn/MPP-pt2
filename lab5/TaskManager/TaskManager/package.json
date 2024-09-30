@@ -22,6 +22,7 @@
     "express": "^4.21.0",
     "firebase": "^10.13.2",
     "firebase-admin": "^12.5.0",
+    "graphql-upload": "^16.0.2",
     "graphql-ws": "^5.16.0",
     "jsonwebtoken": "^9.0.2",
     "pug": "^2.0.4",

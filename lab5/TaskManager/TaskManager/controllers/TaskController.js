@@ -14,82 +14,48 @@ const number_verifier_1 = require("../utils/number_verifier");
 const WsResponse_1 = require("../model/WsResponse");
 class TaskController {
     createTask(task, uid) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const defaultStatus = "Pending";
-            task.status = defaultStatus;
-            try {
-                task = TaskRepository_1.default.createTask(task, uid);
-                return new WsResponse_1.default(201, task, 'Task created');
-            }
-            catch (err) {
-                console.error('Error: ', err);
-                return new WsResponse_1.default(400, null, `${err}`);
-            }
-        });
+        const defaultStatus = "Pending";
+        task.status = defaultStatus;
+        return TaskRepository_1.default.createTask(task, uid);
     }
     uploadFile(file) {
         return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const photo = yield TaskRepository_1.default.uploadFile(file);
-                return new WsResponse_1.default(201, photo);
-            }
-            catch (err) {
-                console.error('Error uploading file:', err);
-                return new WsResponse_1.default(404, null, `${err}`);
-            }
+            return yield TaskRepository_1.default.uploadFile(file);
         });
     }
     updateTask(task, uid) {
         var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
-            try {
-                task = yield TaskRepository_1.default.updateTask(task.id, (_a = task.date) !== null && _a !== void 0 ? _a : null, (_b = task.status) !== null && _b !== void 0 ? _b : null, uid);
-                return new WsResponse_1.default(200, task);
-            }
-            catch (err) {
-                console.error('Error:', err);
-                return new WsResponse_1.default(400, null, `${err}`);
-            }
+            return yield TaskRepository_1.default.updateTask(task.id, (_a = task.date) !== null && _a !== void 0 ? _a : null, (_b = task.status) !== null && _b !== void 0 ? _b : null, uid);
         });
     }
     deleteTask(taskId, uid) {
         return __awaiter(this, void 0, void 0, function* () {
             const path = (yield TaskRepository_1.default.getTaskById(taskId, uid)).photo;
-            try {
-                yield TaskRepository_1.default.deleteTask(taskId, path, uid);
-                return new WsResponse_1.default(204, null);
-            }
-            catch (err) {
-                return new WsResponse_1.default(404, null, `${err}`);
-            }
+            yield TaskRepository_1.default.deleteTask(taskId, path, uid);
         });
     }
     getTotalPages(limit, uid) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!(0, number_verifier_1.default)(limit)) {
-                return new WsResponse_1.default(404, null);
+                throw new Error('404');
             }
-            try {
-                const tasks = yield TaskRepository_1.default.getTasks(uid);
-                const pages = Math.ceil(tasks.length / limit);
-                return new WsResponse_1.default(200, pages);
-            }
-            catch (err) {
-                return new WsResponse_1.default(404, null, `${err}`);
-            }
+            const tasks = yield TaskRepository_1.default.getTasks(uid);
+            const pages = Math.ceil(tasks.length / limit);
+            return pages;
         });
     }
     filterTasks(uid, status, limit, startWith) {
         return __awaiter(this, void 0, void 0, function* () {
             let tasks = [];
             if (!(0, number_verifier_1.default)(limit) || !(0, number_verifier_1.default)(startWith)) {
-                return new WsResponse_1.default(404, startWith - 1);
+                throw new Error('404');
             }
             try {
                 tasks = yield TaskRepository_1.default.getTasks(uid);
             }
             catch (err) {
-                return new WsResponse_1.default(404, startWith - 1);
+                throw new Error('404');
             }
             if (status !== 'None') {
                 tasks.sort((a, b) => {
@@ -105,13 +71,13 @@ class TaskController {
             if (tasks.length < (startWith + 1) * limit) {
                 tasks = tasks.slice(startWith * limit);
                 if (tasks.length === 0) {
-                    return new WsResponse_1.default(404, startWith - 1);
+                    throw new Error('404');
                 }
             }
             else {
                 tasks = tasks.slice(startWith * limit, (startWith + 1) * limit);
             }
-            return new WsResponse_1.default(200, { tasks, page: startWith });
+            return { tasks, page: startWith };
         });
     }
     getTasks(uid, limit, startWith) {

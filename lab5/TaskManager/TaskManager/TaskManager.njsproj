@@ -32,9 +32,6 @@
   <ItemGroup>
     <None Include="app.ts" />
     <Content Include="config\taskmanager-dedf9-firebase-adminsdk-uia8o-f0091c57e0.json" />
-    <Content Include="gq\gq-schema.json">
-      <SubType>Code</SubType>
-    </Content>
     <Content Include="tsconfig.json" />
     <Content Include="package.json" />
     <Content Include="README.md" />

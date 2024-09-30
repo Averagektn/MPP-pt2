@@ -2,17 +2,14 @@ import * as admin from 'firebase-admin';
 import jwt = require('jsonwebtoken');
 import SecretKeyAccess from '../config/jwt_secret_key_access';
 import SecretKeyRefresh from '../config/jwt_secret_key_refresh';
-import WsRequest from '../model/WsRequest';
 
-export default async function validateJwt(req: WsRequest): Promise<boolean> {
-    if (!req.path) {
+export default async function validateJwt(token: string, path: string): Promise<boolean> {
+    if (!path) {
         return false;
     }
 
-    if (req.path.startsWith('tasks')) {
-        try {
-            const token = req.accessToken;
-
+    if (path.startsWith('tasks')) {
+        try { 
             if (!token) {
                 return false;
             }
@@ -23,9 +20,7 @@ export default async function validateJwt(req: WsRequest): Promise<boolean> {
             console.error('Error verifying token:', error);
             return false;
         }
-    } else if (req.path.startsWith('users/access')) {
-        const token = req.refreshToken;
-
+    } else if (path.startsWith('auth')) {
         if (!token) {
             return false;
         }

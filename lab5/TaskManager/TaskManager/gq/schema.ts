@@ -1,9 +1,8 @@
-/*import { GraphQLObjectType, GraphQLString, GraphQLList, GraphQLNonNull,
-    GraphQLSchema,
-} from 'graphql';
+import { GraphQLSchema, GraphQLObjectType, GraphQLString, GraphQLList, GraphQLInt, GraphQLBoolean, GraphQLInputObjectType } from 'graphql';
+import jwt = require('jsonwebtoken');
 import taskController from '../controllers/TaskController';
 import authController from '../controllers/AuthController';
-import Task from '../model/Task';
+import authorize from '../middleware/AuthMiddleware';
 
 const TaskType = new GraphQLObjectType({
     name: 'Task',
@@ -17,157 +16,176 @@ const TaskType = new GraphQLObjectType({
     },
 });
 
-const UserType = new GraphQLObjectType({
-    name: 'User',
+const TaskInputType = new GraphQLInputObjectType({
+    name: 'TaskInput',
     fields: {
-        password: { type: GraphQLString },
-        email: { type: GraphQLString },
+        id: { type: GraphQLString },
+        name: { type: GraphQLString },
+        description: { type: GraphQLString },
+        date: { type: GraphQLString },
+        status: { type: GraphQLString },
+        photo: { type: GraphQLString },
     },
 });
 
-const TokenType = new GraphQLObjectType({
-    name: 'Token',
+const TasksWithPageType = new GraphQLObjectType({
+    name: 'TaskWithPage',
     fields: {
-        refresh: { type: GraphQLString },
-        access: { type: GraphQLString },
+        tasks: { type: new GraphQLList(TaskType) },
+        page: { type: GraphQLInt }
     },
+});
+
+const TokenResponseType = new GraphQLObjectType({
+    name: 'TokenResponse',
+    fields: {
+        accessToken: { type: GraphQLString },
+        refreshToken: { type: GraphQLString }
+    }
+});
+
+const FileType = new GraphQLInputObjectType({
+    name: 'File',
+    fields: {
+        name: { type: GraphQLString },
+        type: { type: GraphQLString },
+        data: { type: GraphQLString }
+    }
 });
 
 const Query = new GraphQLObjectType({
     name: 'Query',
     fields: {
-        tasks: {
-            type: new GraphQLList(TaskType),
+        tasksFilter: {
+            type: TasksWithPageType,
             args: {
-                limit: { type: GraphQLString },
-                startWith: { type: GraphQLString },
+                limit: { type: GraphQLInt },
+                startWith: { type: GraphQLInt },
+                status: { type: GraphQLString },
+                accessToken: { type: GraphQLString }
             },
-            resolve: async (_, { limit, startWith }, context) => {
-                //const { uid } = context; 
-                //return await taskController.getTasks(uid, limit, startWith);
-                return [new Task('name', 'desc')];
-            },
+            resolve: async (src, { limit, startWith, status, accessToken }, context) => {
+                if (await authorize(accessToken, 'tasks')) {
+                    const { uid } = jwt.decode(accessToken) as jwt.JwtPayload;
+                    return await taskController.filterTasks(uid, status, limit, startWith);
+                } else {
+                    throw new Error('401');
+                }
+            }
         },
-        taskById: {
-            type: TaskType,
+        getAccessToken: {
+            type: TokenResponseType,
             args: {
-                id: { type: GraphQLString },
+                refreshToken: { type: GraphQLString }
             },
-            resolve: async (_, { id }, context) => {
-                const { uid } = context;
-                return new Task('name', 'desc');
+            resolve: async (src, { refreshToken }, context) => {
+                if (await authorize(refreshToken, 'auth')) {
+                    const accessToken = await authController.getAccessToken(refreshToken);
+                    return { accessToken };
+                } else {
+                    throw new Error('401');
+                }
+            }
+        },
+        getRefreshToken: {
+            type: TokenResponseType,
+            args: {
+                email: { type: GraphQLString },
+                password: { type: GraphQLString }
             },
+            resolve: async (src, { email, password }, context) => {
+                return await authController.getRefreshToken(email, password);
+            }
+        },
+        getPageCount: {
+            type: GraphQLInt,
+            args: {
+                limit: { type: GraphQLInt },
+                accessToken: { type: GraphQLInt }
+            },
+            resolve: async (src, { limit, accessToken }, context) => {
+                const { uid } = jwt.decode(accessToken) as jwt.JwtPayload;
+                return await taskController.getTotalPages(limit, uid)
+            }
         }
     }
 });
 
-*//*const Mutation = new GraphQLObjectType({
+const Mutation = new GraphQLObjectType({
     name: 'Mutation',
     fields: {
         createUser: {
-            type: ResponseType,
+            type: TokenResponseType,
             args: {
-                email: { type: GraphQLNonNull(GraphQLString) },
-                password: { type: GraphQLNonNull(GraphQLString) },
+                email: { type: GraphQLString },
+                password: { type: GraphQLString }
             },
-            resolve: async (_, { email, password }) => {
+            resolve: async (src, { email, password }, context) => {
                 return await authController.createUser(email, password);
-            },
+            }
         },
-        createTask: {
-            type: ResponseType,
+        removeTask: {
+            type: GraphQLBoolean,
             args: {
-                task: { type: GraphQLNonNull(TaskType) },
-                file: { type: GraphQLString }, // Если файл в виде строки
+                taskId: { type: GraphQLString },
+                accessToken: { type: GraphQLString }
             },
-            resolve: async (_, { task, file }, context) => {
-                const { uid } = context;
-                // Логика для создания задачи
-                return await taskController.createTask(task, uid);
-            },
+            resolve: async (src, { taskId, accessToken }, context) => {
+                if (await authorize(accessToken, 'tasks')) {
+                    const { uid } = jwt.decode(accessToken) as jwt.JwtPayload;
+                    await taskController.deleteTask(taskId, uid);
+                    return true;
+                } else {
+                    throw new Error('401');
+                }
+            }
         },
         updateTask: {
-            type: ResponseType,
+            type: TaskType,
             args: {
-                task: { type: GraphQLNonNull(TaskType) },
+                task: { type: TaskInputType },
+                accessToken: { type: GraphQLString }
             },
-            resolve: async (_, { task }, context) => {
-                const { uid } = context;
-                await taskController.updateTask(task, uid);
-                return { status: 'success', data: 'Task updated' };
-            },
+            resolve: async (src, { task, accessToken }, context) => {
+                if (await authorize(accessToken, 'tasks')) {
+                    const { uid } = jwt.decode(accessToken) as jwt.JwtPayload;
+                    return await taskController.updateTask(task, uid);
+                } else {
+                    throw new Error('401');
+                }
+            }
         },
-        deleteTask: {
-            type: ResponseType,
+        createTask: {
+            type: TaskType,
             args: {
-                taskId: { type: GraphQLNonNull(GraphQLString) },
+                file: { type: FileType },
+                task: { type: TaskInputType },
+                accessToken: { type: GraphQLString }
             },
-            resolve: async (_, { taskId }, context) => {
-                const { uid } = context;
-                await taskController.deleteTask(taskId, uid);
-                return { status: 'success', data: 'Task deleted' };
-            },
-        },
-    },
-});
+            resolve: async (src, { file, task, accessToken }, context) => {
+                if (await authorize(accessToken, 'tasks')) {
+                    const { uid } = jwt.decode(accessToken) as jwt.JwtPayload;
 
-const Subscription = new GraphQLObjectType({
-    name: 'Subscription',
-    fields: {
-        taskCreated: {
-            type: TaskType,
-            subscribe: () => {
-                // Логика подписки на создание задачи
-            },
-        },
-        taskUpdated: {
-            type: TaskType,
-            subscribe: () => {
-                // Логика подписки на обновление задачи
-            },
-        },
-    },
-});*//*
+                    const buffer = Buffer.from(file.data, 'base64');
+                    const newFile = {
+                        originalname: file.name,
+                        mimetype: file.type,
+                        buffer: buffer
+                    };
+
+                    const photo = await taskController.uploadFile(newFile);
+                    task.photo = photo;
+
+                    return taskController.createTask(task, uid);
+                } else {
+                    throw new Error('401');
+                }
+            }
+        }
+    }
+});
 
 export const schema = new GraphQLSchema({
     query: Query,
-    //mutation: Mutation,
-    //subscription: Subscription,
-});*/
-
-import { GraphQLSchema, GraphQLObjectType, GraphQLString } from 'graphql';
-
-/**
- * Construct a GraphQL schema and define the necessary resolvers.
- *
- * type Query {
- *   hello: String
- * }
- * type Subscription {
- *   greetings: String
- * }
- */
-export const schema = new GraphQLSchema({
-    query: new GraphQLObjectType({
-        name: 'Query',
-        fields: {
-            hello: {
-                type: GraphQLString,
-                resolve: () => 'world',
-            },
-        },
-    }),
-    subscription: new GraphQLObjectType({
-        name: 'Subscription',
-        fields: {
-            greetings: {
-                type: GraphQLString,
-                subscribe: async function* () {
-                    for (const hi of ['Hi', 'Bonjour', 'Hola', 'Ciao', 'Zdravo']) {
-                        yield { greetings: hi };
-                    }
-                },
-            },
-        },
-    }),
-});
+    mutation: Mutation
+})
