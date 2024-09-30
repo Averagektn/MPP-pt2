@@ -18,7 +18,6 @@ import routes from './routes/index';
 const debug = require('debug')('my express app');
 const app = express();
 
-
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(cors({
     origin: '*', 

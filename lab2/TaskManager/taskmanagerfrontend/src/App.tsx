@@ -308,7 +308,7 @@ const TaskList: React.FC = () => {
                                 Update
                             </button>
 
-                            <img src={task.photo ?? 'ERROR'} alt="Task Photo" />
+                            <img src={task.photo ?? 'ERROR'} alt="Task Photo" width="200px"/>
 
                             <button
                                 type="submit"
