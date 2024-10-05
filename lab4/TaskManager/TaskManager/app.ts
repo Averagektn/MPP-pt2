@@ -51,7 +51,11 @@ io.on('connection', (socket) => {
         data.path = endpoint;
         try {
             if (await authorize(data)) {
-                const { uid } = jwt.decode(data.accessToken) as jwt.JwtPayload;
+                let token = data.accessToken;
+                if (!token) {
+                    token = data.refreshToken;
+                }
+                const { uid } = jwt.decode(token) as jwt.JwtPayload;
                 const response = await getWsResponseCallback(data);
                 const isMember = socket.rooms.has(uid);
                 if (!isMember) {
@@ -168,6 +172,13 @@ io.on('connection', (socket) => {
         await withAuthorizationSingle('users/refresh', data, async (req) => {
             return await authController.getRefreshToken(req.data.email, req.data.password);
         }, 'users/refreshed');
+    });
+
+    socket.on('users/logout', async (data) => {
+        await withAuthorizationAll('users/logout', data, async (req) => {
+            const { uid } = jwt.decode(req.refreshToken) as jwt.JwtPayload;
+            return await authController.logout(uid);
+        }, 'users/logouted');
     });
 });
 

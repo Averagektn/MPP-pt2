@@ -56,6 +56,17 @@ const TaskList: React.FC = () => {
             setTasks([]);
         }
     });
+    socket.on('users/logouted', (res) => {
+        const data: WsResponse = JSON.parse(res);
+
+        if (data.status >= 200 && data.status < 300) {
+            localStorage.removeItem('refreshJwt');
+
+            setIsValidAccessToken(false);
+            setAccessToken('');
+            setIsAuthModalOpen(true);
+        }
+    });
 
     useEffect(() => {
         const fetchTasks = (): void => {
@@ -253,20 +264,29 @@ const TaskList: React.FC = () => {
 
                     <button type="submit" className="btn" id="prevButton" onClick={async () => {
                         const status = selectFilterRef.current?.value;
-                        await loadFilteredTasks(status!, currentPage - 1, defLimit)
+                        loadFilteredTasks(status!, currentPage - 1, defLimit)
                     }}>
                         Prev
                     </button>
 
                     <button type="submit" className="btn" id="nextButton" onClick={async () => {
                         const status = selectFilterRef.current?.value;
-                        await loadFilteredTasks(status!, currentPage + 1, defLimit)
+                        loadFilteredTasks(status!, currentPage + 1, defLimit)
                     }}>
                         Next
                     </button>
 
                     <button type="submit" className="btn" id="prevButton" onClick={handleLast}>
                         Last
+                    </button>
+                </div>
+                <div className="row">
+                    <button type="submit" className="btn" id="logoutButton" onClick={(evt) => {
+                        evt.preventDefault();
+                        const refreshToken = localStorage.getItem('refreshJwt') ?? '';
+                        socket.emit('users/logout', JSON.stringify(new WsRequest({}, '', refreshToken)));
+                    }}>
+                        Logout
                     </button>
                 </div>
             </section>

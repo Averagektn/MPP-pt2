@@ -53,6 +53,17 @@ class AuthController {
             }
         });
     }
+    logout(uid) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield AuthService_1.default.logout(uid);
+                return new WsResponse_1.default(200, {}, 'logout');
+            }
+            catch (err) {
+                return new WsResponse_1.default(400, err, 'logout failed');
+            }
+        });
+    }
 }
 exports.default = new AuthController();
 //# sourceMappingURL=AuthController.js.map

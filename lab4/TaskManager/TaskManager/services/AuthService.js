@@ -56,6 +56,11 @@ class AuthService {
             return yield AuthRepository_1.default.userExists(email);
         });
     }
+    logout(uid) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield AuthRepository_1.default.logout(uid);
+        });
+    }
 }
 exports.default = new AuthService();
 //# sourceMappingURL=AuthService.js.map

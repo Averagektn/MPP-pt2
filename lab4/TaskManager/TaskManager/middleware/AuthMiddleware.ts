@@ -24,7 +24,7 @@ export default async function validateJwt(req: WsRequest): Promise<boolean> {
             console.error('Error verifying token:', error);
             return false;
         }
-    } else if (req.path.startsWith('users/access')) {
+    } else if (req.path.startsWith('users/access') || req.path.startsWith('users/logout')) {
         const token = req.refreshToken;
 
         if (!token) {
@@ -33,6 +33,7 @@ export default async function validateJwt(req: WsRequest): Promise<boolean> {
 
         try {
             const decoded: any = jwt.verify(token, SecretKeyRefresh);
+            const test = await checkIfUserExists(decoded.uid);
             return await checkIfUserExists(decoded.uid);
         } catch (error) {
             console.error('Error verifying token:', error);

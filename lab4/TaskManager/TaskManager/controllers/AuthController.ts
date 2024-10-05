@@ -41,6 +41,15 @@ class AuthController {
             return new WsResponse(401, null, `${err}`);
         }
     }
+
+    async logout(uid: string): Promise<WsResponse> {
+        try {
+            await authService.logout(uid);
+            return new WsResponse(200, {}, 'logout');
+        } catch (err) {
+            return new WsResponse(400, err, 'logout failed');
+        }
+    }
 }
 
 export default new AuthController();

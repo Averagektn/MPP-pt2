@@ -68,6 +68,10 @@ class AuthRepository {
             return false;
         }
     }
+
+    async logout(uid: string): Promise<void> {
+        await this.db.ref(`tokens/${uid}`).remove();
+    }
 }
 
 export default new AuthRepository();

@@ -55,7 +55,11 @@ io.on('connection', (socket) => {
         data.path = endpoint;
         try {
             if (yield (0, AuthMiddleware_1.default)(data)) {
-                const { uid } = jwt.decode(data.accessToken);
+                let token = data.accessToken;
+                if (!token) {
+                    token = data.refreshToken;
+                }
+                const { uid } = jwt.decode(token);
                 const response = yield getWsResponseCallback(data);
                 const isMember = socket.rooms.has(uid);
                 if (!isMember) {
@@ -161,6 +165,12 @@ io.on('connection', (socket) => {
         yield withAuthorizationSingle('users/refresh', data, (req) => __awaiter(void 0, void 0, void 0, function* () {
             return yield AuthController_1.default.getRefreshToken(req.data.email, req.data.password);
         }), 'users/refreshed');
+    }));
+    socket.on('users/logout', (data) => __awaiter(void 0, void 0, void 0, function* () {
+        yield withAuthorizationAll('users/logout', data, (req) => __awaiter(void 0, void 0, void 0, function* () {
+            const { uid } = jwt.decode(req.refreshToken);
+            return yield AuthController_1.default.logout(uid);
+        }), 'users/logouted');
     }));
 });
 const port = 1337;

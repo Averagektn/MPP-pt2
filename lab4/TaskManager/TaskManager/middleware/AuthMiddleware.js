@@ -33,13 +33,14 @@ function validateJwt(req) {
                 return false;
             }
         }
-        else if (req.path.startsWith('users/access')) {
+        else if (req.path.startsWith('users/access') || req.path.startsWith('users/logout')) {
             const token = req.refreshToken;
             if (!token) {
                 return false;
             }
             try {
                 const decoded = jwt.verify(token, jwt_secret_key_refresh_1.default);
+                const test = yield checkIfUserExists(decoded.uid);
                 return yield checkIfUserExists(decoded.uid);
             }
             catch (error) {

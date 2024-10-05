@@ -74,6 +74,11 @@ class AuthRepository {
             }
         });
     }
+    logout(uid) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.db.ref(`tokens/${uid}`).remove();
+        });
+    }
 }
 exports.default = new AuthRepository();
 //# sourceMappingURL=AuthRepository.js.map
