@@ -1,21 +1,21 @@
 import React, { ChangeEvent, useRef, useState } from 'react';
 import Task from '../model/Task';
-import { io } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 import WsResponse from '../model/WsResponse';
 
 interface CreateTaskProps {
     accessToken: string;
-    onTaskCreated: (newTask: Task) => void; 
+    onTaskCreated: (newTask: Task) => void;
+    socket: Socket;
 }
 
-const CreateTask: React.FC<CreateTaskProps> = ({ accessToken, onTaskCreated }) => {
+const CreateTask: React.FC<CreateTaskProps> = ({ accessToken, onTaskCreated, socket }) => {
     const [taskName, setTaskName] = useState<string>('');
     const [taskDescription, setTaskDescription] = useState<string>('');
     const [file, setFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-    const socket = io('http://localhost:1337');
-    socket.on('tasks/create', (res) => {
+    socket.on('tasks/created', (res) => {
         const data: WsResponse = JSON.parse(res);
 
         if (data.status >= 200 && data.status < 300) {

@@ -50,15 +50,7 @@ class TaskController {
         }
 
         if (status !== 'None') {
-            tasks.sort((a, b) => {
-                if (a.status === status && b.status !== status) {
-                    return -1;
-                }
-                if (a.status !== status && b.status === status) {
-                    return 1;
-                }
-                return 0;
-            });
+            tasks = tasks.filter(task => task.status === status);
         }
 
         if (tasks.length < (startWith + 1) * limit) {

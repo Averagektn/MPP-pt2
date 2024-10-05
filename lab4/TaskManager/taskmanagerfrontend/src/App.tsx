@@ -23,7 +23,7 @@ const TaskList: React.FC = () => {
     const defLimit = 8;
 
     const socket = io('http://localhost:1337');
-    socket.on('users/access', (res) => {
+    socket.on('users/accessed', (res) => {
         const data: WsResponse = JSON.parse(res);
 
         if (data.status >= 200 && data.status < 300) {
@@ -33,14 +33,14 @@ const TaskList: React.FC = () => {
             setIsAuthModalOpen(true);
         }
     });
-    socket.on('tasks/pages', (res) => {
+    socket.on('tasks/paged', (res) => {
         const data: WsResponse = JSON.parse(res);
 
         if (data.status >= 200 && data.status < 300) {
             setCurrentPage(data.data - 1);
         } 
     });
-    socket.on('tasks/filter', (res) => {
+    socket.on('tasks/filtered', (res) => {
         const data: WsResponse = JSON.parse(res);
 
         if (data.status >= 200 && data.status < 300) {
@@ -58,10 +58,10 @@ const TaskList: React.FC = () => {
     });
 
     useEffect(() => {
-        const fetchTasks = async (): Promise<void> => {
+        const fetchTasks = (): void => {
             try {
                 const status = selectFilterRef.current?.value;
-                await loadFilteredTasks(status!, currentPage, defLimit);
+                loadFilteredTasks(status!, currentPage, defLimit);
             } catch (error) {
                 console.error('Error:', error);
             }
@@ -102,7 +102,7 @@ const TaskList: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isValidAccessToken]);
 
-    const loadFilteredTasks = async (status: string, currentPage: number, limit: number): Promise<void> => {
+    const loadFilteredTasks = (status: string, currentPage: number, limit: number): void => {
         socket.emit('tasks/filter', JSON.stringify(new WsRequest({ status, limit, startWith: currentPage }, accessToken, '')));
     }
 
@@ -161,7 +161,7 @@ const TaskList: React.FC = () => {
         try {
             const status = selectFilterRef.current?.value; 
             if (status) {
-                await loadFilteredTasks(status, currentPage, defLimit);
+                loadFilteredTasks(status, currentPage, defLimit);
             }
         } catch (error) {
             console.error('Error:', error);
@@ -179,6 +179,7 @@ const TaskList: React.FC = () => {
             <h1>Task List</h1>
             <hr />
             <AuthModal
+                socket={socket}
                 isOpen={isAuthModalOpen}
                 onClose={(token) => {
                     setIsAuthModalOpen(false);
@@ -186,7 +187,7 @@ const TaskList: React.FC = () => {
                     setAccessToken(token);
                 }} />
             <section>
-                <AddTask accessToken={accessToken} onTaskCreated={handleTaskCreated} />
+                <AddTask accessToken={accessToken} onTaskCreated={handleTaskCreated} socket={socket} />
 
                 <div className="row">
                     <strong>Filter by</strong>
@@ -236,7 +237,9 @@ const TaskList: React.FC = () => {
                                 Update
                             </button>
 
-                            <img src={task.photo ?? 'ERROR'} alt="Task Photo" width="200" />
+                            <a href={task.photo ?? 'ERROR'} download>
+                                <img src={task.photo ?? 'ERROR'} alt="Task Photo" width="200" />
+                            </a>
 
                             <button
                                 type="submit"

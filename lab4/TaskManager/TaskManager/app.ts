@@ -21,15 +21,15 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: '*', 
+        origin: 'http://localhost:5173', 
         methods: ['GET', 'POST']
     }
 });
 
 type AsyncCallback = (data: WsRequest) => Promise<WsResponse>;
-
+io.setMaxListeners(Infinity);
 io.on('connection', (socket) => {
-    const withAuthorization = async (endpoint: string, req: any, getWsResponseCallback: AsyncCallback): Promise<void> => {
+    const withAuthorizationSingle = async (endpoint: string, req: any, getWsResponseCallback: AsyncCallback, responseEndpoint: string): Promise<void> => {
         const data: WsRequest = JSON.parse(req);
         data.path = endpoint;
 
@@ -37,29 +37,48 @@ io.on('connection', (socket) => {
             if (await authorize(data)) {
                 const response = await getWsResponseCallback(data);
 
-                socket.emit(endpoint, JSON.stringify(response));
+                socket.emit(responseEndpoint, JSON.stringify(response));
             } else {
-                socket.emit(endpoint, JSON.stringify(new WsResponse(401, null)));
+                socket.emit(responseEndpoint, JSON.stringify(new WsResponse(401, null)));
             }
         } catch (err) {
-            socket.emit(endpoint, JSON.stringify(new WsResponse(400, err)));
+            socket.emit(responseEndpoint, JSON.stringify(new WsResponse(400, err)));
+        }
+    };
+
+    const withAuthorizationAll = async (endpoint: string, req: any, getWsResponseCallback: AsyncCallback, responseEndpoint: string): Promise<void> => {
+        const data: WsRequest = JSON.parse(req);
+        data.path = endpoint;
+        try {
+            if (await authorize(data)) {
+                const { uid } = jwt.decode(data.accessToken) as jwt.JwtPayload;
+                const response = await getWsResponseCallback(data);
+                const isMember = socket.rooms.has(uid);
+                if (!isMember) {
+                    socket.join(uid);
+                }
+                io.to(uid).emit(responseEndpoint, JSON.stringify(response));
+            } else {
+                socket.emit(responseEndpoint, JSON.stringify(new WsResponse(401, 'failed to authorize')));
+            }
+        } catch (err) {
+            socket.emit(responseEndpoint, JSON.stringify(new WsResponse(400, err)));
         }
     };
 
     socket.on('message', async (data) => {
-        await withAuthorization('message', data, async (req: WsRequest) => {
+        await withAuthorizationAll('message', data, async (req: WsRequest) => {
             console.log('User sent:', req);
             return new WsResponse(200, req.data);
-        });
+        }, 'messaged');
     });
 
     socket.on('tasks/create', async (data) => {
         data.path = 'tasks/create';
+        const { uid } = jwt.decode(data.accessToken) as jwt.JwtPayload;
 
         try {
             if (await authorize(data)) {
-                const { uid } = jwt.decode(data.accessToken) as jwt.JwtPayload;
-
                 const buffer = Buffer.from(data.file.buffer);
                 const file = {
                     originalname: data.file.name,
@@ -70,79 +89,85 @@ io.on('connection', (socket) => {
                 const task = data.task;
                 task.photo = photo;
 
-                const response = await taskController.createTask(task, uid);
+                await taskController.createTask(task, uid);
+                const response = await taskController.filterTasks(uid, 'None', 8, 0);
 
-                socket.emit('tasks/create', JSON.stringify(response));
+                const isMember = socket.rooms.has(uid);
+                if (!isMember) {
+                    socket.join(uid);
+                }
+                io.to(uid).emit('tasks/filtered', JSON.stringify(response));
             } else {
-                socket.emit('tasks/create', JSON.stringify(new WsResponse(401, null)));
+                socket.emit('tasks/filtered', JSON.stringify(new WsResponse(401, null)));
             }
         } catch (err) {
-            socket.emit('tasks/create', JSON.stringify(new WsResponse(400, err)));
+            socket.emit('tasks/filtered', JSON.stringify(new WsResponse(400, err)));
         }
     });
 
     socket.on('tasks/update', async (data) => {
-        await withAuthorization('tasks/filter', data, async (req) => {
+        
+        await withAuthorizationAll('tasks/filter', data, async (req) => {
             const { uid } = jwt.decode(req.accessToken) as jwt.JwtPayload;
             await taskController.updateTask(req.data.task, uid);
 
             return await taskController.filterTasks(uid, req.data.status, req.data.limit, req.data.startWith);
-        })
+        }, 'tasks/filtered')
     });
 
     socket.on('tasks/delete', async (data) => {
-        await withAuthorization('tasks/filter', data, async (req) => {
+        await withAuthorizationAll('tasks/delete', data, async (req) => {
             const { uid } = jwt.decode(req.accessToken) as jwt.JwtPayload;
             await taskController.deleteTask(req.data.taskId, uid);
 
             return await taskController.filterTasks(uid, req.data.status, req.data.limit, req.data.startWith);
-        });
+        }, 'tasks/filtered');
     });
 
     socket.on('tasks/filter', async (data) => {
-        await withAuthorization('tasks/filter', data, async (req) => {
+        await withAuthorizationAll('tasks/filter', data, async (req) => {
             const { uid } = jwt.decode(req.accessToken) as jwt.JwtPayload;
             return await taskController.filterTasks(uid, req.data.status, req.data.limit, req.data.startWith);
-        });
+        }, 'tasks/filtered');
     });
 
     socket.on('tasks', async (data) => {
-        await withAuthorization('tasks', data, async (req) => {
+        await withAuthorizationAll('tasks', data, async (req) => {
             const { uid } = jwt.decode(req.accessToken) as jwt.JwtPayload;
             return await taskController.getTasks(uid, req.data.limit ?? 8, req.data.startWith ?? 0);
-        });
+        }, 'tasked');
     });
 
     socket.on('tasks/pages', async (data) => {
-        await withAuthorization('tasks/pages', data, async (req) => {
+        await withAuthorizationAll('tasks/pages', data, async (req) => {
             const { uid } = jwt.decode(req.accessToken) as jwt.JwtPayload;
             return await taskController.getTotalPages(req.data.limit ?? 8, uid);
-        });
+        }, 'tasks/paged');
     });
 
     socket.on('tasks/id', async (data) => {
-        await withAuthorization('tasks/id', data, async (req) => {
+        await withAuthorizationAll('tasks/id', data, async (req) => {
             const { uid } = jwt.decode(req.accessToken) as jwt.JwtPayload;
             return await taskController.getTaskById(uid, req.data);
-        });
+        }, 'tasks/id');
     });
 
     socket.on('users/create', async (data) => {
-        await withAuthorization('users/create', data, async (req) => {
+        await withAuthorizationSingle('users/create', data, async (req) => {
             return await authController.createUser(req.data.email, req.data.password);
-        });
+        }, 'users/created');
     });
 
     socket.on('users/access', async (data) => {
-        await withAuthorization('users/access', data, async (req) => {
-            return await authController.getAccessToken(req.refreshToken)
-        });
+        await withAuthorizationSingle('users/access', data, async (req) => {
+            return await authController.getAccessToken(req.refreshToken);
+        }, 'users/accessed');
     });
 
     socket.on('users/refresh', async (data) => {
-        await withAuthorization('users/refresh', data, async (req) => {
+        await withAuthorizationSingle('users/refresh', data, async (req) => {
             return await authController.getRefreshToken(req.data.email, req.data.password);
-        });
+        }, 'users/refreshed');
     });
 });
 

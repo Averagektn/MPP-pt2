@@ -16,7 +16,8 @@ export default async function validateJwt(req: WsRequest): Promise<boolean> {
             if (!token) {
                 return false;
             }
-        
+
+            console.log('verifying jwt...');
             const decoded: any = jwt.verify(token, SecretKeyAccess);
             return await checkIfUserExists(decoded.uid);
         } catch (error) {

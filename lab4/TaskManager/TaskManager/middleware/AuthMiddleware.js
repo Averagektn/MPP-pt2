@@ -24,6 +24,7 @@ function validateJwt(req) {
                 if (!token) {
                     return false;
                 }
+                console.log('verifying jwt...');
                 const decoded = jwt.verify(token, jwt_secret_key_access_1.default);
                 return yield checkIfUserExists(decoded.uid);
             }

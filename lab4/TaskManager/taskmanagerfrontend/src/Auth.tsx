@@ -1,22 +1,22 @@
 import { useState } from 'react'
 import '../stylesheets/main.css'
 import React from 'react'
-import { io } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 import WsResponse from '../model/WsResponse';
 import WsRequest from '../model/WsRequest';
 
 interface AuthModalProps {
     isOpen: boolean;
     onClose: (accessToken: string) => void;
+    socket: Socket;
 }
 
-const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
+const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, socket }) => {
     const [email, setEmail] = useState<string>('');
     const [password, setPassword] = useState<string>('');
     const [error, setError] = useState<string>('');
 
-    const socket = io('http://localhost:1337');
-    socket.on('users/refresh', (res) => {
+    socket.on('users/refreshed', (res) => {
         const data: WsResponse = JSON.parse(res);
 
         if (data.status >= 200 && data.status < 300) {
@@ -26,7 +26,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             setError('Login error');
         }
     });
-    socket.on('users/create', (res) => {
+    socket.on('users/created', (res) => {
         const data: WsResponse = JSON.parse(res);
 
         if (data.status >= 200 && data.status < 300) {
