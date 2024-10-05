@@ -168,12 +168,6 @@ const TaskList: React.FC = () => {
         }
     };
 
-    const handleTaskCreated = (newTask: Task) => {
-        if (tasks.length < defLimit) {
-            setTasks((prevTasks) => [...prevTasks, newTask]);
-        }
-    };
-
     return (
         <div className="container">
             <h1>Task List</h1>
@@ -187,7 +181,7 @@ const TaskList: React.FC = () => {
                     setAccessToken(token);
                 }} />
             <section>
-                <AddTask accessToken={accessToken} onTaskCreated={handleTaskCreated} socket={socket} />
+                <AddTask accessToken={accessToken} socket={socket} />
 
                 <div className="row">
                     <strong>Filter by</strong>

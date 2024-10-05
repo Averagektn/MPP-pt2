@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import '../stylesheets/main.css'
 import React from 'react'
-import { io, Socket } from 'socket.io-client';
+import { Socket } from 'socket.io-client';
 import WsResponse from '../model/WsResponse';
 import WsRequest from '../model/WsRequest';
 
