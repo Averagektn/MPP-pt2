@@ -27,6 +27,10 @@ class AuthController {
 
         return { refreshToken, accessToken };
     }
+
+    async logout(uid: string): Promise<void> {
+        await authService.logout(uid);
+    }
 }
 
 export default new AuthController();

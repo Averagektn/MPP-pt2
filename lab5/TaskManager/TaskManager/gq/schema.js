@@ -62,6 +62,22 @@ const FileType = new graphql_1.GraphQLInputObjectType({
 const Query = new graphql_1.GraphQLObjectType({
     name: 'Query',
     fields: {
+        logout: {
+            type: graphql_1.GraphQLBoolean,
+            args: {
+                refreshToken: { type: graphql_1.GraphQLString }
+            },
+            resolve: (src, { refreshToken }, context) => __awaiter(void 0, void 0, void 0, function* () {
+                if (yield (0, AuthMiddleware_1.default)(refreshToken, 'logout')) {
+                    const { uid } = jwt.decode(refreshToken);
+                    yield AuthController_1.default.logout(uid);
+                    return true;
+                }
+                else {
+                    throw new Error('401');
+                }
+            })
+        },
         tasksFilter: {
             type: TasksWithPageType,
             args: {

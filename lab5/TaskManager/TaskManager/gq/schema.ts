@@ -3,6 +3,7 @@ import jwt = require('jsonwebtoken');
 import taskController from '../controllers/TaskController';
 import authController from '../controllers/AuthController';
 import authorize from '../middleware/AuthMiddleware';
+import { refreshToken } from 'firebase-admin/app';
 
 const TaskType = new GraphQLObjectType({
     name: 'Task',
@@ -56,6 +57,21 @@ const FileType = new GraphQLInputObjectType({
 const Query = new GraphQLObjectType({
     name: 'Query',
     fields: {
+        logout: {
+            type: GraphQLBoolean,
+            args: {
+                refreshToken: { type: GraphQLString }
+            },
+            resolve: async (src, { refreshToken }, context) => {
+                if (await authorize(refreshToken, 'logout')) {
+                    const { uid } = jwt.decode(refreshToken) as jwt.JwtPayload;
+                    await authController.logout(uid);
+                    return true;
+                } else {
+                    throw new Error('401');
+                }
+            }
+        },
         tasksFilter: {
             type: TasksWithPageType,
             args: {

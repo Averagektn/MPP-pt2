@@ -346,7 +346,9 @@ const TaskList: React.FC = () => {
                                 Update
                             </button>
 
-                            <img src={task.photo ?? 'ERROR'} alt="Task Photo" width="200" />
+                            <a href={task.photo ?? 'ERROR'} download>
+                                <img src={task.photo ?? 'ERROR'} alt="Task Photo" width="200" />
+                            </a>
 
                             <button
                                 type="submit"
@@ -383,6 +385,41 @@ const TaskList: React.FC = () => {
                     </button>
                 </div>
             </section>
+            <div className="row">
+                <button type="submit" className="btn" id="logoutButton" onClick={async (evt) => {
+                    evt.preventDefault();
+                    const refreshToken = localStorage.getItem('refreshJwt') ?? '';
+                    const client = createClient({
+                        url: 'ws://localhost:1337/graphql',
+                    });
+
+                    const query = client.iterate({
+                        query: `query Logout($refreshToken: String!) {
+                            logout(refreshToken: $refreshToken)
+                        }`,
+                        variables: { refreshToken },
+                    });
+
+                    try {
+                        const { value } = await query.next();
+                        console.log(value);
+
+                        if (!value.errors) {
+                            localStorage.removeItem('refreshJwt');
+
+                            setIsValidAccessToken(false);
+                            setAccessToken('');
+                            setIsAuthModalOpen(true);
+                        }
+
+                        client.dispose();
+                    } catch (err) {
+                        console.log(err);
+                    }
+                }}>
+                    Logout
+                </button>
+            </div>
         </div>
     );
 };

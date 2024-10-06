@@ -36,6 +36,11 @@ class AuthController {
             return { refreshToken, accessToken };
         });
     }
+    logout(uid) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield AuthService_1.default.logout(uid);
+        });
+    }
 }
 exports.default = new AuthController();
 //# sourceMappingURL=AuthController.js.map

@@ -47,6 +47,10 @@ class AuthService {
 
         return await authRepository.userExists(email);
     }
+
+    async logout(uid: string): Promise<void> {
+        await authRepository.logout(uid);
+    }
 }
 
 export default new AuthService();

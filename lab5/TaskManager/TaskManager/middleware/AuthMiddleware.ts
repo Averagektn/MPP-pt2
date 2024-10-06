@@ -20,7 +20,7 @@ export default async function validateJwt(token: string, path: string): Promise<
             console.error('Error verifying token:', error);
             return false;
         }
-    } else if (path.startsWith('auth')) {
+    } else if (path.startsWith('auth') || path.startsWith('logout')) {
         if (!token) {
             return false;
         }

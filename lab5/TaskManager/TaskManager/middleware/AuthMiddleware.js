@@ -31,7 +31,7 @@ function validateJwt(token, path) {
                 return false;
             }
         }
-        else if (path.startsWith('auth')) {
+        else if (path.startsWith('auth') || path.startsWith('logout')) {
             if (!token) {
                 return false;
             }
