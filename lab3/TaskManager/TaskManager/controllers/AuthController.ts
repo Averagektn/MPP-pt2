@@ -44,6 +44,18 @@ class AuthController {
         }
     }
 
+    async logout(req: express.Request, res: express.Response): Promise<void> {
+        const token: string = req.cookies.token;
+        const { uid } = jwt.decode(token) as jwt.JwtPayload;
+
+        try {
+            await authService.logout(uid);
+            res.status(200).send();
+        } catch (err) {
+            res.status(400).send();
+        }
+    }
+
     async createUser(req: express.Request, res: express.Response): Promise<void> {
         const { email, password } = req.body;
 

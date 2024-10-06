@@ -18,5 +18,6 @@ router.get('/tasks/:id', taskController.getTaskById);
 router.post('/auth/users', authController.createUser);
 router.post('/auth/access', authController.getAccessToken);
 router.post('/auth/refresh', authController.getRefreshToken);
+router.post('/auth/logout', authController.logout);
 
 export default router;

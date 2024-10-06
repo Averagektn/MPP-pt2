@@ -52,6 +52,19 @@ class AuthController {
             }
         });
     }
+    logout(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const token = req.cookies.token;
+            const { uid } = jwt.decode(token);
+            try {
+                yield AuthService_1.default.logout(uid);
+                res.status(200).send();
+            }
+            catch (err) {
+                res.status(400).send();
+            }
+        });
+    }
     createUser(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const { email, password } = req.body;

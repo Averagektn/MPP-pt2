@@ -63,6 +63,11 @@ class AuthRepository {
             return user.uid;
         });
     }
+    logout(uid) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.db.ref(`tokens/${uid}`).remove();
+        });
+    }
     userExists(email) {
         return __awaiter(this, void 0, void 0, function* () {
             try {

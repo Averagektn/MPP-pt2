@@ -32,7 +32,7 @@ function validateJwt(req, res, next) {
                 return res.status(401).send('Unauthorized: Invalid token');
             }
         }
-        else if (req.path.startsWith('/auth/access')) {
+        else if (req.path.startsWith('/auth/access') || req.path.startsWith('/auth/logout')) {
             const token = req.cookies.token;
             if (!token) {
                 return res.status(401).send('Unauthorized: No token provided');

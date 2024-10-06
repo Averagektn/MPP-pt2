@@ -21,7 +21,7 @@ export default async function validateJwt(req: express.Request, res: express.Res
             console.error('Error verifying token:', error);
             return res.status(401).send('Unauthorized: Invalid token');
         }
-    } else if (req.path.startsWith('/auth/access')) {
+    } else if (req.path.startsWith('/auth/access') || req.path.startsWith('/auth/logout')) {
         const token = req.cookies.token;
 
         if (!token) {

@@ -60,6 +60,10 @@ class AuthRepository {
         return user.uid;
     }
 
+    async logout(uid: string): Promise<void> {
+        await this.db.ref(`tokens/${uid}`).remove();
+    }
+
     async userExists(email: string): Promise<boolean> {
         try {
             await this.auth.getUserByEmail(email);

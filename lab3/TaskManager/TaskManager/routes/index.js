@@ -17,5 +17,6 @@ router.get('/tasks/:id', TaskController_1.default.getTaskById);
 router.post('/auth/users', AuthController_1.default.createUser);
 router.post('/auth/access', AuthController_1.default.getAccessToken);
 router.post('/auth/refresh', AuthController_1.default.getRefreshToken);
+router.post('/auth/logout', AuthController_1.default.logout);
 exports.default = router;
 //# sourceMappingURL=index.js.map

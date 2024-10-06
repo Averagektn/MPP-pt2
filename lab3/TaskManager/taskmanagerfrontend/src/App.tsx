@@ -304,7 +304,9 @@ const TaskList: React.FC = () => {
                                 Update
                             </button>
 
-                            <img src={task.photo ?? 'ERROR'} alt="Task Photo" width="200" />
+                            <a href={task.photo ?? 'ERROR'} download>
+                                <img src={task.photo ?? 'ERROR'} alt="Task Photo" width="200" />
+                            </a>
 
                             <button
                                 type="submit"
@@ -332,6 +334,30 @@ const TaskList: React.FC = () => {
 
                     <button type="submit" className="btn" id="prevButton" onClick={handleLast}>
                         Last
+                    </button>
+                </div>
+                <div className="row">
+                    <button type="submit" className="btn" id="logoutButton" onClick={async (evt) => {
+                        evt.preventDefault();
+                        try {
+                            const response = await fetch(`http://localhost:1337/auth/logout`, {
+                                method: 'POST',
+                                credentials: 'include'
+                            });
+
+                            if (response.ok) {
+                                setIsValidAccessToken(false);
+                                setAccessToken('');
+                                setIsAuthModalOpen(true);
+                            } else {
+                                console.error('Get error', response.statusText);
+                            }
+
+                        } catch (err) {
+                            console.error('Error:', err);
+                        }
+                    }}>
+                        Logout
                     </button>
                 </div>
             </section>
