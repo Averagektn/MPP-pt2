@@ -215,6 +215,37 @@ const TaskList: React.FC = () => {
         }
     }
 
+    const handleNext = async (): Promise<void> => {
+        if (isValidAccessToken) {
+            const query = client.iterate({
+                query: `query GetPageCount($limit: Int!, $accessToken: String!) {
+                            getPageCount(limit: $limit, accessToken: $accessToken)
+                        }`,
+                variables: { limit: defLimit, accessToken },
+            });
+
+            try {
+                const { value } = await query.next();
+                console.log(value);
+
+                if (value.errors) {
+                    const message = value.errors[0].message
+                    if (message === '401') {
+                        setIsValidAccessToken(false);
+                    }
+                } else {
+                    const pageCount = value.data.getPageCount;
+                    if (pageCount - 1 > currentPage) {
+                        const status = selectFilterRef.current?.value;
+                        await loadFilteredTasks(status!, currentPage + 1, defLimit);
+                    }
+                }
+            } catch (err) {
+                console.log(err);
+            }
+        }
+    }
+
     const handleStatusChange = (taskId: string, event: React.ChangeEvent<HTMLSelectElement>) => {
         const newTasks = [...tasks];
         const selectedStatus = event.target.value;
@@ -344,16 +375,15 @@ const TaskList: React.FC = () => {
                     </button>
 
                     <button type="submit" className="btn" id="prevButton" onClick={async () => {
-                        const status = selectFilterRef.current?.value;
-                        await loadFilteredTasks(status!, currentPage - 1, defLimit)
+                        if (currentPage > 0) {
+                            const status = selectFilterRef.current?.value;
+                            await loadFilteredTasks(status!, currentPage - 1, defLimit)
+                        }
                     }}>
                         Prev
                     </button>
 
-                    <button type="submit" className="btn" id="nextButton" onClick={async () => {
-                        const status = selectFilterRef.current?.value;
-                        await loadFilteredTasks(status!, currentPage + 1, defLimit)
-                    }}>
+                    <button type="submit" className="btn" id="nextButton" onClick={handleNext}>
                         Next
                     </button>
 
