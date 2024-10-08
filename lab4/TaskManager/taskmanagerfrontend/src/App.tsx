@@ -140,6 +140,10 @@ const TaskList: React.FC = () => {
         socket.emit('tasks/pages', JSON.stringify(new WsRequest({ limit: defLimit }, accessToken, '')));
     }
 
+    const handleNext = async (): Promise<void> => {
+        socket.emit('tasks/pages', JSON.stringify(new WsRequest({ limit: defLimit, currentPage }, accessToken, '')));
+    }
+
     const handleStatusChange = (taskId: string, event: React.ChangeEvent<HTMLSelectElement>) => {
         const newTasks = [...tasks];
         const selectedStatus = event.target.value;
@@ -263,16 +267,15 @@ const TaskList: React.FC = () => {
                     </button>
 
                     <button type="submit" className="btn" id="prevButton" onClick={async () => {
-                        const status = selectFilterRef.current?.value;
-                        loadFilteredTasks(status!, currentPage - 1, defLimit)
+                        if (currentPage > 0) {
+                            const status = selectFilterRef.current?.value;
+                            loadFilteredTasks(status!, currentPage - 1, defLimit)
+                        }
                     }}>
                         Prev
                     </button>
 
-                    <button type="submit" className="btn" id="nextButton" onClick={async () => {
-                        const status = selectFilterRef.current?.value;
-                        loadFilteredTasks(status!, currentPage + 1, defLimit)
-                    }}>
+                    <button type="submit" className="btn" id="nextButton" onClick={handleNext}>
                         Next
                     </button>
 

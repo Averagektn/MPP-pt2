@@ -149,6 +149,16 @@ io.on('connection', (socket) => {
         }, 'tasks/paged');
     });
 
+    socket.on('tasks/next-page', async (data) => {
+        await withAuthorizationAll('tasks/next-page', data, async (req) => {
+            const { uid } = jwt.decode(req.accessToken) as jwt.JwtPayload;
+            const currentPage = req.data.currentPage;
+            const totalPages = await taskController.getTotalPages(req.data.limit ?? 8, uid);
+            const pages = currentPage + 1 >= totalPages ? currentPage : currentPage + 1;
+            return new WsResponse(200, pages);
+        }, 'tasks/paged');
+    });
+
     socket.on('tasks/id', async (data) => {
         await withAuthorizationAll('tasks/id', data, async (req) => {
             const { uid } = jwt.decode(req.accessToken) as jwt.JwtPayload;

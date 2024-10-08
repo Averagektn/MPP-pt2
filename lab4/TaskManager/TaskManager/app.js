@@ -145,6 +145,16 @@ io.on('connection', (socket) => {
             return yield TaskController_1.default.getTotalPages((_c = req.data.limit) !== null && _c !== void 0 ? _c : 8, uid);
         }), 'tasks/paged');
     }));
+    socket.on('tasks/next-page', (data) => __awaiter(void 0, void 0, void 0, function* () {
+        yield withAuthorizationAll('tasks/next-page', data, (req) => __awaiter(void 0, void 0, void 0, function* () {
+            var _d;
+            const { uid } = jwt.decode(req.accessToken);
+            const currentPage = req.data.currentPage;
+            const totalPages = yield TaskController_1.default.getTotalPages((_d = req.data.limit) !== null && _d !== void 0 ? _d : 8, uid);
+            const pages = currentPage + 1 >= totalPages ? currentPage : currentPage + 1;
+            return new WsResponse_1.default(200, pages);
+        }), 'tasks/paged');
+    }));
     socket.on('tasks/id', (data) => __awaiter(void 0, void 0, void 0, function* () {
         yield withAuthorizationAll('tasks/id', data, (req) => __awaiter(void 0, void 0, void 0, function* () {
             const { uid } = jwt.decode(req.accessToken);
