@@ -187,6 +187,7 @@ io.on('connection', (socket) => {
     socket.on('users/logout', async (data) => {
         await withAuthorizationAll('users/logout', data, async (req) => {
             const { uid } = jwt.decode(req.refreshToken) as jwt.JwtPayload;
+            //socket.leave(uid);
             return await authController.logout(uid);
         }, 'users/logouted');
     });

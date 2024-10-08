@@ -179,6 +179,7 @@ io.on('connection', (socket) => {
     socket.on('users/logout', (data) => __awaiter(void 0, void 0, void 0, function* () {
         yield withAuthorizationAll('users/logout', data, (req) => __awaiter(void 0, void 0, void 0, function* () {
             const { uid } = jwt.decode(req.refreshToken);
+            //socket.leave(uid);
             return yield AuthController_1.default.logout(uid);
         }), 'users/logouted');
     }));
