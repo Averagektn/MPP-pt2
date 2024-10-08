@@ -1,13 +1,14 @@
 import React, { ChangeEvent, useRef, useState } from 'react';
 import Task from '../model/Task';
-import { createClient } from 'graphql-ws';
+import { Client } from 'graphql-ws';
 
 interface CreateTaskProps {
     accessToken: string;
-    onTaskCreated: (newTask: Task) => void; 
+    onTaskCreated: (newTask: Task) => void;
+    client: Client;
 }
 
-const CreateTask: React.FC<CreateTaskProps> = ({ accessToken, onTaskCreated }) => {
+const CreateTask: React.FC<CreateTaskProps> = ({ accessToken, onTaskCreated, client }) => {
     const [taskName, setTaskName] = useState<string>('');
     const [taskDescription, setTaskDescription] = useState<string>('');
     const [file, setFile] = useState<File | null>(null);
@@ -27,10 +28,6 @@ const CreateTask: React.FC<CreateTaskProps> = ({ accessToken, onTaskCreated }) =
 
         const reader = new FileReader();
         reader.onloadend = async () => {
-            const client = createClient({
-                url: 'ws://localhost:1337/graphql',
-            });
-
             const dataUrl = reader.result as string; 
             const base64Data = dataUrl.split(',')[1]; 
 
@@ -68,8 +65,6 @@ const CreateTask: React.FC<CreateTaskProps> = ({ accessToken, onTaskCreated }) =
             if (fileInputRef.current) {
                 fileInputRef.current.value = '';
             }
-
-            client.dispose();
         };
         reader.readAsDataURL(file);
     };

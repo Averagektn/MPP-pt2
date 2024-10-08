@@ -3,7 +3,6 @@ import jwt = require('jsonwebtoken');
 import taskController from '../controllers/TaskController';
 import authController from '../controllers/AuthController';
 import authorize from '../middleware/AuthMiddleware';
-import { refreshToken } from 'firebase-admin/app';
 
 const TaskType = new GraphQLObjectType({
     name: 'Task',

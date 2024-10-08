@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import '../stylesheets/main.css'
 import React from 'react'
-import { createClient } from 'graphql-ws';
+import { Client } from 'graphql-ws';
 
 interface AuthModalProps {
     isOpen: boolean;
     onClose: (accessToken: string) => void;
+    client: Client;
 }
 
-const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
+const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, client }) => {
     const [email, setEmail] = useState<string>('');
     const [password, setPassword] = useState<string>('');
     const [error, setError] = useState<string>('');
@@ -16,10 +17,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     const handleSubmitRegistration = async (event: React.FormEvent<HTMLButtonElement>) => {
         event.preventDefault();
         setError('');
-
-        const client = createClient({
-            url: 'ws://localhost:1337/graphql',
-        });
 
         const query = client.iterate({
             query: `mutation CreateUser($email: String!, $password: String!) {
@@ -41,17 +38,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             localStorage.setItem('refreshJwt', value.data.createUser.refreshToken);
             onClose(value.data.createUser.accessToken);
         }
-
-        client.dispose();
     }
 
     const handleSubmitLogin = async (event: React.FormEvent<HTMLButtonElement>) => {
         event.preventDefault();
         setError('');
-
-        const client = createClient({
-            url: 'ws://localhost:1337/graphql',
-        });
 
         const query = client.iterate({
             query: `query GetRefreshToken($email: String!, $password: String!) {
@@ -73,8 +64,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             localStorage.setItem('refreshJwt', value.data.getRefreshToken.refreshToken);
             onClose(value.data.getRefreshToken.accessToken);
         }
-
-        client.dispose();
     };
 
     if (!isOpen) {

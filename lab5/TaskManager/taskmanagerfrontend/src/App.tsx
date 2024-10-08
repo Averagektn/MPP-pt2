@@ -20,6 +20,10 @@ const TaskList: React.FC = () => {
     const statuses = ['Pending', 'Rejected', 'Accepted'];
     const defLimit = 8;
 
+    const client = createClient({
+        url: 'ws://localhost:1337/graphql',
+    });
+
     useEffect(() => {
         const fetchTasks = async (): Promise<void> => {
             try {
@@ -52,9 +56,6 @@ const TaskList: React.FC = () => {
         };
 
         const getNewToken = async () => {
-            const client = createClient({
-                url: 'ws://localhost:1337/graphql',
-            });
             const refreshToken = localStorage.getItem('refreshJwt') ?? '';
             const query = client.iterate({
                 query: `query GetAccessToken($refreshToken: String!) {
@@ -75,7 +76,6 @@ const TaskList: React.FC = () => {
                 setAccessToken(value.data.getAccessToken.accessToken);
                 setIsValidAccessToken(true);
             }
-            client.dispose();
         };
 
         if (isValidAccessToken) {
@@ -88,10 +88,6 @@ const TaskList: React.FC = () => {
     }, [isValidAccessToken]);
 
     const loadFilteredTasks = async (status: string, currentPage: number, limit: number): Promise<void> => {
-        const client = createClient({
-            url: 'ws://localhost:1337/graphql',
-        });
-
         const query = client.iterate({
             query: `query GetTasks($limit: Int, $startWith: Int, $status: String, $accessToken: String) {
               tasksFilter(limit: $limit, startWith: $startWith, status: $status, accessToken: $accessToken) {
@@ -128,8 +124,6 @@ const TaskList: React.FC = () => {
             setCurrentPage(value.data.tasksFilter.page);
             setTasks(newTasks);
         }
-
-        client.dispose();
     }
 
     const handleDelete = async (taskId: string): Promise<void> => {
@@ -137,10 +131,6 @@ const TaskList: React.FC = () => {
             setDeleteTask(taskId);
         } else {
             const status = selectFilterRef.current?.value;
-
-            const client = createClient({
-                url: 'ws://localhost:1337/graphql',
-            });
 
             const query = client.iterate({
                 query: `mutation RemoveTask($taskId: String!, $accessToken: String!) {
@@ -162,8 +152,6 @@ const TaskList: React.FC = () => {
             } else {
                 await loadFilteredTasks(status!, currentPage, defLimit);
             }
-
-            client.dispose();
         }
     };
 
@@ -172,10 +160,6 @@ const TaskList: React.FC = () => {
             setUpdateTask(new Task('', '', status, taskId, date, null));
         } else {
             const task = new Task('', '', status, taskId, date, '')
-
-            const client = createClient({
-                url: 'ws://localhost:1337/graphql',
-            });
 
             const query = client.iterate({
                 query: `mutation UpdateTask($task: TaskInput!, $accessToken: String!) {
@@ -200,17 +184,11 @@ const TaskList: React.FC = () => {
                 const selectedStatus = selectFilterRef.current?.value;
                 await loadFilteredTasks(selectedStatus!, currentPage, defLimit);
             }
-
-            client.dispose();
         }
     };
 
     const handleLast = async (): Promise<void> => {
         if (isValidAccessToken) {
-            const client = createClient({
-                url: 'ws://localhost:1337/graphql',
-            });
-
             const query = client.iterate({
                 query: `query GetPageCount($limit: Int!, $accessToken: String!) {
                             getPageCount(limit: $limit, accessToken: $accessToken)
@@ -231,8 +209,6 @@ const TaskList: React.FC = () => {
                     const status = selectFilterRef.current?.value;
                     await loadFilteredTasks(status!, value.data.getPageCount - 1, defLimit);
                 }
-
-                client.dispose();
             } catch (err) {
                 console.log(err);
             }
@@ -290,13 +266,14 @@ const TaskList: React.FC = () => {
             <hr />
             <AuthModal
                 isOpen={isAuthModalOpen}
+                client={client}
                 onClose={(token) => {
                     setIsAuthModalOpen(false);
                     setIsValidAccessToken(true);
                     setAccessToken(token);
                 }} />
             <section>
-                <AddTask accessToken={accessToken} onTaskCreated={handleTaskCreated} />
+                <AddTask accessToken={accessToken} onTaskCreated={handleTaskCreated} client={client} />
 
                 <div className="row">
                     <strong>Filter by</strong>
@@ -389,9 +366,6 @@ const TaskList: React.FC = () => {
                 <button type="submit" className="btn" id="logoutButton" onClick={async (evt) => {
                     evt.preventDefault();
                     const refreshToken = localStorage.getItem('refreshJwt') ?? '';
-                    const client = createClient({
-                        url: 'ws://localhost:1337/graphql',
-                    });
 
                     const query = client.iterate({
                         query: `query Logout($refreshToken: String!) {
@@ -411,8 +385,6 @@ const TaskList: React.FC = () => {
                             setAccessToken('');
                             setIsAuthModalOpen(true);
                         }
-
-                        client.dispose();
                     } catch (err) {
                         console.log(err);
                     }
