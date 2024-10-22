@@ -214,7 +214,7 @@ const TaskList: React.FC = () => {
         try {
             const status = selectFilterRef.current?.value; 
             if (status) {
-                await loadFilteredTasks(status, currentPage, defLimit);
+                await loadFilteredTasks(status, currentPage, defLimit, true);
             }
         } catch (error) {
             console.error('Error:', error);
